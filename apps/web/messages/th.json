@@ -1,0 +1,155 @@
+{
+  "common": {
+    "appName": "EmulFast",
+    "loading": "กำลังโหลด...",
+    "error": "เกิดข้อผิดพลาด",
+    "retry": "ลองใหม่",
+    "cancel": "ยกเลิก",
+    "confirm": "ยืนยัน",
+    "save": "บันทึก",
+    "back": "กลับ",
+    "next": "ถัดไป"
+  },
+  "auth": {
+    "login": {
+      "title": "เข้าสู่ระบบ",
+      "email": "อีเมล",
+      "password": "รหัสผ่าน",
+      "submit": "เข้าสู่ระบบ",
+      "noAccount": "ยังไม่มีบัญชี?",
+      "register": "สมัครสมาชิก"
+    },
+    "register": {
+      "title": "สมัครสมาชิก",
+      "displayName": "ชื่อที่แสดง",
+      "email": "อีเมล",
+      "password": "รหัสผ่าน",
+      "confirmPassword": "ยืนยันรหัสผ่าน",
+      "submit": "สมัครสมาชิก",
+      "hasAccount": "มีบัญชีแล้ว?",
+      "login": "เข้าสู่ระบบ"
+    },
+    "logout": "ออกจากระบบ"
+  },
+  "errors": {
+    "VALIDATION_ERROR": "ข้อมูลไม่ถูกต้อง",
+    "UNAUTHORIZED": "กรุณาเข้าสู่ระบบก่อน",
+    "FORBIDDEN": "ไม่มีสิทธิ์เข้าถึง",
+    "NOT_FOUND": "ไม่พบข้อมูล",
+    "CONFLICT": "ข้อมูลซ้ำ",
+    "INSUFFICIENT_FUNDS": "ยอดเงินไม่เพียงพอ",
+    "EMULATOR_LIMIT": "ถึงจำนวน emulator สูงสุดที่ใช้งานได้",
+    "PAYMENT_FAILED": "การชำระเงินล้มเหลว",
+    "RATE_LIMIT": "คำขอมากเกินไป กรุณารอสักครู่",
+    "INTERNAL": "เกิดข้อผิดพลาดภายใน กรุณาลองใหม่"
+  },
+  "nav": {
+    "home": "หน้าแรก",
+    "packages": "แพ็กเกจ",
+    "dashboard": "แดชบอร์ด",
+    "profile": "โปรไฟล์",
+    "admin": "ผู้ดูแลระบบ"
+  },
+  "packages": {
+    "title": "แพ็กเกจ",
+    "subtitle": "เลือกแพ็กเกจที่เหมาะกับคุณ",
+    "per_day": "บาท/วัน",
+    "per_month": "บาท/เดือน",
+    "fcoin_per_day": "Fcoin/วัน",
+    "android": "Android {version}",
+    "cpu": "{cores} cores",
+    "ram": "RAM {mb} MB",
+    "rom": "ROM {gb} GB",
+    "select": "เลือกแพ็กเกจนี้",
+    "billing_days": "จำนวนวัน",
+    "payment_method": "วิธีชำระเงิน",
+    "pay_card": "บัตรเครดิต/เดบิต",
+    "pay_fcoin": "Fcoin (ยอดเหลือ: {balance})",
+    "checkout": "ดำเนินการชำระเงิน",
+    "fcoin_insufficient": "Fcoin ไม่เพียงพอ กรุณาเติมเงินก่อน",
+    "topup_first": "เติม Fcoin"
+  },
+  "payment": {
+    "processing": "กำลังดำเนินการชำระเงิน...",
+    "success": {
+      "title": "ชำระเงินสำเร็จ!",
+      "desc_emulator": "คำสั่งซื้อของคุณเสร็จสมบูรณ์ กำลังเตรียม Emulator...",
+      "desc_topup": "เติม Fcoin เรียบร้อยแล้ว",
+      "create_emulator": "สร้าง Emulator",
+      "go_wallet": "ดูยอด Fcoin",
+      "go_orders": "ดูคำสั่งซื้อ"
+    },
+    "cancel": {
+      "title": "ยกเลิกการชำระเงิน",
+      "desc": "คุณได้ยกเลิกการชำระเงินแล้ว",
+      "try_again": "ลองอีกครั้ง"
+    },
+    "polling": "กำลังตรวจสอบสถานะ..."
+  },
+  "orders": {
+    "title": "คำสั่งซื้อของฉัน",
+    "empty": "ยังไม่มีคำสั่งซื้อ",
+    "status": {
+      "pending": "รอดำเนินการ",
+      "awaiting_payment": "รอชำระเงิน",
+      "paid": "ชำระแล้ว",
+      "failed": "ล้มเหลว",
+      "cancelled": "ยกเลิกแล้ว",
+      "refunded": "คืนเงินแล้ว"
+    },
+    "type": {
+      "emulator_purchase": "ซื้อ Emulator",
+      "emulator_renewal": "ต่ออายุ Emulator",
+      "wallet_topup": "เติม Fcoin"
+    },
+    "pay_now": "ชำระเงินเดี๋ยวนี้",
+    "view_emulator": "ดู Emulator"
+  },
+  "wallet": {
+    "title": "กระเป๋า Fcoin",
+    "balance": "ยอดคงเหลือ",
+    "topup": "เติม Fcoin",
+    "topup_amount": "จำนวนเงิน (บาท)",
+    "topup_note": "1 บาท = 1 Fcoin",
+    "topup_min": "ขั้นต่ำ 10 บาท",
+    "topup_max": "สูงสุด 10,000 บาท",
+    "topup_submit": "ดำเนินการเติมเงิน",
+    "tx_history": "ประวัติธุรกรรม",
+    "tx_empty": "ยังไม่มีธุรกรรม",
+    "tx": {
+      "topup": "เติม Fcoin",
+      "spend": "ใช้ Fcoin",
+      "refund": "คืน Fcoin",
+      "reward": "รางวัล Fcoin",
+      "promo_credit": "Fcoin จาก Promo",
+      "adjustment": "ปรับยอด Fcoin"
+    }
+  },
+  "emulator": {
+    "viewer": {
+      "title": "ดู Emulator",
+      "status": {
+        "running": "กำลังทำงาน",
+        "provisioning": "กำลังเตรียมระบบ",
+        "stopped": "หยุดทำงาน",
+        "stopping": "กำลังหยุด",
+        "expired": "หมดอายุ",
+        "terminated": "ถูกยกเลิก",
+        "failed": "เกิดข้อผิดพลาด"
+      },
+      "expires_at": "หมดอายุ: {date}",
+      "expiring_soon": "ใกล้หมดอายุ — เหลืออีก {minutes} นาที",
+      "stream_placeholder": "กำลังเชื่อมต่อกับ Android Stream...",
+      "stream_not_available": "Stream ยังไม่พร้อมใช้งาน",
+      "terminate": "ยกเลิก Emulator",
+      "terminate_confirm": "คุณต้องการยกเลิก Emulator นี้ใช่หรือไม่? การดำเนินการนี้ไม่สามารถย้อนกลับได้",
+      "terminate_success": "ยกเลิก Emulator เรียบร้อยแล้ว",
+      "not_found": "ไม่พบ Emulator นี้",
+      "not_found_desc": "Emulator ที่คุณต้องการอาจถูกลบหรือไม่มีอยู่ในระบบ",
+      "back_to_list": "กลับไปหน้ารายการ",
+      "package_label": "แพ็กเกจ",
+      "connected": "เชื่อมต่อแล้ว",
+      "disconnected": "ขาดการเชื่อมต่อ"
+    }
+  }
+}

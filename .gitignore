@@ -1,0 +1,56 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+.turbo/
+
+# Environment
+.env
+.env.local
+.env.*.local
+.env.production
+!.env.example
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Prisma
+*.db
+*.db-journal
+
+# Testing
+coverage/
+.nyc_output/
+
+# Docker
+infra/docker/data/
+
+# Misc
+*.pem
+*.key
+*.crt
+secrets/
+
+# Keep placeholder dirs in git
+!**/.gitkeep
+
+# Claude Code (project local)
+.claude/local/

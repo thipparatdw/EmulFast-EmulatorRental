@@ -1,0 +1,159 @@
+name: emulfast
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: emulfast-postgres
+    restart: unless-stopped
+    env_file:
+      - ../../.env
+    environment:
+      POSTGRES_DB: emulfast
+      POSTGRES_USER: emulfast
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - emulfast-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U emulfast -d emulfast"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  redis:
+    image: redis:7-alpine
+    container_name: emulfast-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - emulfast-net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  adminer:
+    image: adminer:latest
+    container_name: emulfast-adminer
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: pepa-linha
+    networks:
+      - emulfast-net
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080 > /dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  orchestrator:
+    build:
+      context: ../..
+      dockerfile: infra/docker/orchestrator.Dockerfile
+    container_name: emulfast-orchestrator
+    restart: unless-stopped
+    env_file:
+      - ../../.env
+    ports:
+      - "5000:5000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - emulfast-net
+      - emulfast-redroid
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5000/health || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  ws-scrcpy:
+    build:
+      context: ../..
+      dockerfile: infra/docker/ws-scrcpy.Dockerfile
+    container_name: emulfast-ws-scrcpy
+    restart: unless-stopped
+    env_file:
+      - ../../.env
+    ports:
+      - "8000:8000"
+    networks:
+      - emulfast-net
+      - emulfast-redroid
+    depends_on:
+      orchestrator:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8000 || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # ─── Redroid Template (reference config) ───────────────────────────────────
+  # NOTE: Redroid containers ไม่ได้ถูก start จากที่นี่โดยตรง
+  # Orchestrator (apps/orchestrator) จะ create/remove containers เหล่านี้ dynamically ผ่าน dockerode
+  # Service นี้เป็น reference config เท่านั้น — ใช้สำหรับ manual test
+  #
+  # Prerequisites บน Linux host:
+  #   - /dev/kvm ต้องมีอยู่ (KVM enabled)
+  #   - /dev/binder ต้องมีอยู่ (Android binder IPC)
+  #   - /dev/ashmem ต้องมีอยู่ (Android shared memory)
+  #   - WSL2: ต้องใช้ custom kernel พร้อม CONFIG_ANDROID_BINDER_IPC + CONFIG_ASHMEM
+  redroid-template:
+    image: redroid/redroid:10.0.0-latest
+    container_name: emulfast-redroid-template
+    privileged: true
+    devices:
+      - /dev/kvm:/dev/kvm
+    volumes:
+      - /dev/binder:/dev/binder
+      - /dev/ashmem:/dev/ashmem
+    ports:
+      - "5555:5555"   # ADB port (orchestrator จะ map port dynamic ในช่วง 5555-5655)
+    networks:
+      - emulfast-redroid
+    environment:
+      - REDROID_GPU_MODE=auto
+    profiles:
+      - redroid   # รัน: docker compose --profile redroid up redroid-template
+
+networks:
+  emulfast-net:
+    name: emulfast-net
+    driver: bridge
+
+  # Redroid containers ใช้ network แยกต่างหาก (ไม่ connect กับ DB/Redis)
+  emulfast-redroid:
+    name: emulfast-redroid
+    driver: bridge
+    internal: false
+
+volumes:
+  postgres_data:
+    name: emulfast-postgres-data
+  redis_data:
+    name: emulfast-redis-data

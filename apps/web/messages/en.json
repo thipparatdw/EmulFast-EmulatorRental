@@ -1,0 +1,155 @@
+{
+  "common": {
+    "appName": "EmulFast",
+    "loading": "Loading...",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "back": "Back",
+    "next": "Next"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign In",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign In",
+      "noAccount": "Don't have an account?",
+      "register": "Sign Up"
+    },
+    "register": {
+      "title": "Create Account",
+      "displayName": "Display Name",
+      "email": "Email",
+      "password": "Password",
+      "confirmPassword": "Confirm Password",
+      "submit": "Create Account",
+      "hasAccount": "Already have an account?",
+      "login": "Sign In"
+    },
+    "logout": "Sign Out"
+  },
+  "errors": {
+    "VALIDATION_ERROR": "Invalid input data",
+    "UNAUTHORIZED": "Please sign in to continue",
+    "FORBIDDEN": "You do not have permission to access this",
+    "NOT_FOUND": "Resource not found",
+    "CONFLICT": "Duplicate entry",
+    "INSUFFICIENT_FUNDS": "Insufficient balance",
+    "EMULATOR_LIMIT": "You have reached the maximum number of active emulators",
+    "PAYMENT_FAILED": "Payment failed",
+    "RATE_LIMIT": "Too many requests, please try again later",
+    "INTERNAL": "An internal error occurred, please try again"
+  },
+  "nav": {
+    "home": "Home",
+    "packages": "Packages",
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "admin": "Admin"
+  },
+  "packages": {
+    "title": "Packages",
+    "subtitle": "Choose the package that fits you best",
+    "per_day": "THB/day",
+    "per_month": "THB/month",
+    "fcoin_per_day": "Fcoin/day",
+    "android": "Android {version}",
+    "cpu": "{cores} cores",
+    "ram": "RAM {mb} MB",
+    "rom": "ROM {gb} GB",
+    "select": "Select this package",
+    "billing_days": "Number of days",
+    "payment_method": "Payment method",
+    "pay_card": "Credit/Debit Card",
+    "pay_fcoin": "Fcoin (Balance: {balance})",
+    "checkout": "Proceed to checkout",
+    "fcoin_insufficient": "Insufficient Fcoin. Please top up first.",
+    "topup_first": "Top up Fcoin"
+  },
+  "payment": {
+    "processing": "Processing payment...",
+    "success": {
+      "title": "Payment successful!",
+      "desc_emulator": "Your order is complete. Setting up your Emulator...",
+      "desc_topup": "Fcoin has been credited to your wallet.",
+      "create_emulator": "Create Emulator",
+      "go_wallet": "View Fcoin balance",
+      "go_orders": "View orders"
+    },
+    "cancel": {
+      "title": "Payment cancelled",
+      "desc": "You have cancelled the payment.",
+      "try_again": "Try again"
+    },
+    "polling": "Checking payment status..."
+  },
+  "orders": {
+    "title": "My Orders",
+    "empty": "No orders yet",
+    "status": {
+      "pending": "Pending",
+      "awaiting_payment": "Awaiting Payment",
+      "paid": "Paid",
+      "failed": "Failed",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded"
+    },
+    "type": {
+      "emulator_purchase": "Emulator Purchase",
+      "emulator_renewal": "Emulator Renewal",
+      "wallet_topup": "Wallet Top-up"
+    },
+    "pay_now": "Pay Now",
+    "view_emulator": "View Emulator"
+  },
+  "wallet": {
+    "title": "Fcoin Wallet",
+    "balance": "Balance",
+    "topup": "Top up Fcoin",
+    "topup_amount": "Amount (THB)",
+    "topup_note": "1 THB = 1 Fcoin",
+    "topup_min": "Minimum 10 THB",
+    "topup_max": "Maximum 10,000 THB",
+    "topup_submit": "Proceed to top up",
+    "tx_history": "Transaction history",
+    "tx_empty": "No transactions yet",
+    "tx": {
+      "topup": "Fcoin Top-up",
+      "spend": "Fcoin Spent",
+      "refund": "Fcoin Refunded",
+      "reward": "Fcoin Reward",
+      "promo_credit": "Promo Fcoin",
+      "adjustment": "Fcoin Adjustment"
+    }
+  },
+  "emulator": {
+    "viewer": {
+      "title": "Emulator Viewer",
+      "status": {
+        "running": "Running",
+        "provisioning": "Provisioning",
+        "stopped": "Stopped",
+        "stopping": "Stopping",
+        "expired": "Expired",
+        "terminated": "Terminated",
+        "failed": "Failed"
+      },
+      "expires_at": "Expires: {date}",
+      "expiring_soon": "Expiring soon — {minutes} minutes left",
+      "stream_placeholder": "Connecting to Android Stream...",
+      "stream_not_available": "Stream not available",
+      "terminate": "Terminate Emulator",
+      "terminate_confirm": "Are you sure you want to terminate this emulator? This action cannot be undone.",
+      "terminate_success": "Emulator terminated successfully",
+      "not_found": "Emulator not found",
+      "not_found_desc": "The emulator you are looking for may have been deleted or does not exist.",
+      "back_to_list": "Back to list",
+      "package_label": "Package",
+      "connected": "Connected",
+      "disconnected": "Disconnected"
+    }
+  }
+}

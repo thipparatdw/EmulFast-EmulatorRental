@@ -1,0 +1,518 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  user
+  staff
+  admin
+}
+
+enum UserStatus {
+  active
+  suspended
+  banned
+}
+
+enum EmulatorStatus {
+  provisioning
+  running
+  stopping
+  stopped
+  expired
+  failed
+  terminated
+}
+
+enum OrderType {
+  emulator_purchase
+  emulator_renewal
+  wallet_topup
+}
+
+enum OrderStatus {
+  pending
+  awaiting_payment
+  paid
+  failed
+  cancelled
+  refunded
+}
+
+enum PaymentStatus {
+  pending
+  succeeded
+  failed
+  refunded
+}
+
+enum PaymentGateway {
+  stripe
+  fcoin
+  manual
+}
+
+enum PaymentMethod {
+  card
+  fcoin
+}
+
+enum WalletTxType {
+  topup
+  spend
+  refund
+  reward
+  promo_credit
+  adjustment
+}
+
+enum WalletTxDirection {
+  credit
+  debit
+}
+
+enum PromocodeType {
+  percent
+  fixed
+  fcoin_grant
+}
+
+enum MembershipTierCode {
+  bronze
+  silver
+  gold
+  platinum
+}
+
+enum RewardType {
+  fcoin
+  discount_code
+  free_days
+  physical
+}
+
+enum RewardRedemptionStatus {
+  pending
+  fulfilled
+  cancelled
+  expired
+}
+
+enum TicketStatus {
+  open
+  pending_user
+  pending_staff
+  resolved
+  closed
+}
+
+enum TicketChannel {
+  bot
+  staff
+}
+
+enum TicketPriority {
+  low
+  normal
+  high
+  urgent
+}
+
+enum SupportSenderType {
+  user
+  bot
+  staff
+  system
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id               String     @id @default(cuid())
+  email            String     @unique
+  emailVerifiedAt  DateTime?
+  passwordHash     String
+  phone            String?    @unique
+  displayName      String
+  avatarUrl        String?
+  role             Role       @default(user)
+  status           UserStatus @default(active)
+  locale           String     @default("th")
+  membershipTierId String?
+  membershipPoints Int        @default(0)
+
+  lastLoginAt DateTime?
+  lastLoginIp String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  membershipTier  MembershipTier?    @relation(fields: [membershipTierId], references: [id], onDelete: SetNull)
+  wallet          Wallet?
+  emulators       Emulator[]
+  orders          Order[]
+  walletTxs       WalletTransaction[]
+  redemptions     RewardRedemption[]
+  tickets         SupportTicket[]    @relation("TicketOwner")
+  assignedTickets SupportTicket[]    @relation("TicketAssignee")
+  supportMessages SupportMessage[]
+  feedbacks       Feedback[]
+
+  @@index([role, status])
+  @@index([membershipTierId])
+  @@index([createdAt])
+}
+
+model Package {
+  id             String  @id @default(cuid())
+  code           String  @unique
+  nameKey        String
+  descriptionKey String?
+  androidVersion String
+  cpuCores       Int
+  ramMb          Int
+  romGb          Int
+  pricePerDay    Decimal @db.Decimal(12, 2)
+  pricePerMonth  Decimal @db.Decimal(12, 2)
+  fcoinPerDay    Decimal @db.Decimal(18, 4)
+  isActive       Boolean @default(true)
+  sortOrder      Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders    Order[]
+  emulators Emulator[]
+
+  @@index([isActive, sortOrder])
+}
+
+model Emulator {
+  id      String @id @default(cuid())
+  userId  String
+  packageId String
+  orderId String? @unique
+
+  containerId   String? @unique
+  hostNode      String  @default("default")
+  adbPort       Int?
+  websocketPath String?
+  internalIp    String?
+
+  status        EmulatorStatus @default(provisioning)
+  failureReason String?
+  metadata      Json?
+
+  expiresAt       DateTime
+  lastHeartbeatAt DateTime?
+  startedAt       DateTime?
+  stoppedAt       DateTime?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user          User     @relation(fields: [userId], references: [id], onDelete: Restrict)
+  package       Package  @relation(fields: [packageId], references: [id], onDelete: Restrict)
+  order         Order?   @relation("OrderToEmulator", fields: [orderId], references: [id], onDelete: SetNull)
+  renewalOrders Order[]  @relation("RenewalForEmulator")
+
+  @@index([userId, status])
+  @@index([status, expiresAt])
+  @@index([hostNode, status])
+  @@index([adbPort])
+}
+
+model Order {
+  id          String @id @default(cuid())
+  orderNumber String @unique
+  userId      String
+  type        OrderType
+  packageId   String?
+  emulatorId  String?
+  promocodeId String?
+
+  currency    String        @default("THB")
+  subtotal    Decimal       @db.Decimal(12, 2)
+  discount    Decimal       @default(0) @db.Decimal(12, 2)
+  total       Decimal       @db.Decimal(12, 2)
+  fcoinAmount Decimal?      @db.Decimal(18, 4)
+
+  paymentMethod PaymentMethod
+  status        OrderStatus   @default(pending)
+
+  billingDays Int       @default(30)
+  expiresAt   DateTime?
+
+  createdById String?
+  metadata    Json?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  paidAt      DateTime?
+  cancelledAt DateTime?
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Restrict)
+  package       Package?    @relation(fields: [packageId], references: [id], onDelete: Restrict)
+  emulator      Emulator?   @relation("OrderToEmulator")
+  renewalTarget Emulator?   @relation("RenewalForEmulator", fields: [emulatorId], references: [id], onDelete: SetNull)
+  promocode     Promocode?  @relation(fields: [promocodeId], references: [id], onDelete: SetNull)
+  payment       Payment?
+  walletTxs     WalletTransaction[]
+
+  @@index([userId, status])
+  @@index([status, createdAt])
+  @@index([type, status])
+  @@index([promocodeId])
+}
+
+model Payment {
+  id      String        @id @default(cuid())
+  orderId String        @unique
+  gateway PaymentGateway
+  method  PaymentMethod
+  status  PaymentStatus @default(pending)
+
+  amount   Decimal @db.Decimal(12, 2)
+  currency String  @default("THB")
+
+  gatewayChargeId String? @unique
+  gatewayIntentId String?
+  qrCodeUrl       String?
+  receiptUrl      String?
+
+  webhookEventId String? @unique
+  failureCode    String?
+  failureMessage String?
+
+  rawPayload Json?
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  paidAt     DateTime?
+  refundedAt DateTime?
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([gateway, status])
+  @@index([status, createdAt])
+}
+
+model Wallet {
+  id            String  @id @default(cuid())
+  userId        String  @unique
+  balance       Decimal @default(0) @db.Decimal(18, 4)
+  lockedBalance Decimal @default(0) @db.Decimal(18, 4)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user         User                @relation(fields: [userId], references: [id], onDelete: Restrict)
+  transactions WalletTransaction[]
+
+  @@index([userId])
+}
+
+model WalletTransaction {
+  id       String            @id @default(cuid())
+  walletId String
+  userId   String
+  orderId  String?
+
+  type         WalletTxType
+  direction    WalletTxDirection
+  amount       Decimal           @db.Decimal(18, 4)
+  balanceAfter Decimal           @db.Decimal(18, 4)
+
+  noteKey   String?
+  metadata  Json?
+
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  wallet Wallet  @relation(fields: [walletId], references: [id], onDelete: Restrict)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  order  Order?  @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@index([walletId, createdAt])
+  @@index([userId, createdAt])
+  @@index([orderId])
+  @@index([type, createdAt])
+}
+
+model Promocode {
+  id              String        @id @default(cuid())
+  code            String        @unique
+  type            PromocodeType
+  value           Decimal       @db.Decimal(12, 2)
+  maxRedemptions  Int?
+  redemptionCount Int           @default(0)
+  perUserLimit    Int           @default(1)
+  minOrderAmount  Decimal?      @db.Decimal(12, 2)
+  applicablePackageCodes Json?
+  startsAt        DateTime?
+  expiresAt       DateTime?
+  isActive        Boolean       @default(true)
+
+  createdById String?
+  updatedById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+
+  @@index([isActive, expiresAt])
+  @@index([code])
+}
+
+model MembershipTier {
+  id                String             @id @default(cuid())
+  code              MembershipTierCode @unique
+  nameKey           String
+  minPoints         Int                @default(0)
+  discountPercent   Decimal            @default(0) @db.Decimal(5, 2)
+  fcoinBonusPercent Decimal            @default(0) @db.Decimal(5, 2)
+  perks             Json?
+  iconUrl           String?
+  sortOrder         Int                @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users User[]
+
+  @@index([sortOrder])
+}
+
+model Reward {
+  id             String     @id @default(cuid())
+  nameKey        String
+  descriptionKey String?
+  type           RewardType
+  pointsCost     Int
+  payload        Json
+  stock          Int?
+  redeemedCount  Int        @default(0)
+  imageUrl       String?
+  isActive       Boolean    @default(true)
+  startsAt       DateTime?
+  expiresAt      DateTime?
+
+  createdById String?
+  updatedById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  redemptions RewardRedemption[]
+
+  @@index([isActive, expiresAt])
+  @@index([type, isActive])
+}
+
+model RewardRedemption {
+  id             String                 @id @default(cuid())
+  userId         String
+  rewardId       String
+  pointsSpent    Int
+  status         RewardRedemptionStatus @default(pending)
+  fulfillmentRef String?
+  notesKey       String?
+  metadata       Json?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  fulfilledAt DateTime?
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Restrict)
+  reward Reward @relation(fields: [rewardId], references: [id], onDelete: Restrict)
+
+  @@index([userId, createdAt])
+  @@index([rewardId])
+  @@index([status])
+}
+
+model SupportTicket {
+  id           String         @id @default(cuid())
+  ticketNumber String         @unique
+  userId       String
+  assignedToId String?
+
+  subjectKey String?
+  subject    String
+  channel    TicketChannel  @default(bot)
+  status     TicketStatus   @default(open)
+  priority   TicketPriority @default(normal)
+
+  faqMatchScore Float?
+  escalatedAt   DateTime?
+  closedAt      DateTime?
+  resolvedAt    DateTime?
+
+  metadata Json?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user       User             @relation("TicketOwner", fields: [userId], references: [id], onDelete: Restrict)
+  assignedTo User?            @relation("TicketAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  messages   SupportMessage[]
+
+  @@index([userId, status])
+  @@index([assignedToId, status])
+  @@index([status, channel])
+  @@index([createdAt])
+}
+
+model SupportMessage {
+  id         String            @id @default(cuid())
+  ticketId   String
+  senderType SupportSenderType
+  senderId   String?
+  contentKey String?
+  content    String
+  imageUrls  Json?
+  metadata   Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  sender User?         @relation(fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@index([ticketId, createdAt])
+  @@index([senderId])
+}
+
+model Feedback {
+  id         String  @id @default(cuid())
+  userId     String?
+  emulatorId String?
+  ticketId   String?
+  rating     Int
+  contentKey String?
+  content    String?
+  metadata   Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([rating])
+  @@index([emulatorId])
+  @@index([ticketId])
+}
