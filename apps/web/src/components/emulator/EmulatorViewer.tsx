@@ -233,6 +233,9 @@ export default function EmulatorViewer({ emulatorId }: EmulatorViewerProps) {
 
   const emulator = data.data.emulator;
   const isRunning = emulator.status === "running";
+  const streamUrl = emulator.websocketUrl
+    ? emulator.websocketUrl.replace(/^ws(s?):\/\//, "http$1://")
+    : null;
 
   const expiresAtFormatted = new Intl.DateTimeFormat(
     locale === "th" ? "th-TH" : "en-GB",
@@ -314,9 +317,9 @@ export default function EmulatorViewer({ emulatorId }: EmulatorViewerProps) {
 
         {/* Stream area */}
         <div className="mb-4 overflow-hidden rounded-xl border border-gray-200 bg-gray-900">
-          {isRunning && emulator.websocketUrl ? (
+          {isRunning && streamUrl ? (
             <iframe
-              src={emulator.websocketUrl}
+              src={streamUrl}
               title="Android Emulator Stream"
               className="h-[480px] w-full border-0"
               aria-label="Android Emulator Stream"

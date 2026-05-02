@@ -93,15 +93,29 @@ docs/        architecture.md phases.md api-contract.md token-budget.md runbook.m
 .claude/     agents/ commands/ settings.local.json
 ```
 
+## Skills (Runbooks)
+
+Skills อยู่ใน `.claude/commands/` — เรียกใช้ด้วย `/skill-name`
+
+| Skill | ไฟล์ | ใช้เมื่อ |
+|---|---|---|
+| `/dev-run` | `commands/dev-run.md` | รัน project ทดสอบบน GCP server (API + Frontend + DB) |
+
+> เพิ่ม skill ใหม่: สร้างไฟล์ `commands/<name>.md` แล้วเพิ่มแถวในตารางนี้
+
 ## Current State
 
-> **Last updated**: 2026-05-02
+> **Last updated**: 2026-05-02 (session #19)
 >
-> **Active Phase**: Phase 2 ✅ Done — Phase 3 รอเริ่ม
+> **Active Phase**: Phase 3 ✅ Done — Phase 4 รอเริ่ม
 >
-> **Phase 2 summary**: WalletModule, OrderModule, PaymentModule (Stripe webhook + idempotency), EmulatorService renewal ครบ. Frontend: /packages, /payment/success, /orders, /wallet, /emulators/create. i18n (packages/payment/orders/wallet) TH+EN. QA: 53 tests ✅, lint+typecheck+build ✅.
+> **Phase 3 summary**: Backend UsersModule (GET/PATCH /users/me, POST /users/me/password) + 9 tests. Frontend: Landing page, Login/Register UX, Dashboard with WS notifications, Profile (edit + change password), History (orders/wallet tx). i18n: 6 namespaces (landing, auth_page, dashboard, notifications, profile, history) TH+EN. Orchestrator: ContainerService /dev/binder mount, adbSerial fixes, scheduleAdbConnect zombie cleanup + tests. ws-scrcpy Dockerfile build tools. QA: 74 tests ✅, Lighthouse ≥80/95 ✅, lint ✅, typecheck ✅, build ✅.
 >
-> **Next action**: รอสั่ง `/plan-phase 3` เพื่อเริ่ม Phase 3 (User WebApp)
+> **Session #19**: รัน project จริงบน GCP ครั้งแรก — DB migration + seed, แก้ BullMQ Redis URL, CORS, NEXT_PUBLIC_API_URL, bug PackagesClient parse, สร้าง skill `/dev-run`
+>
+> **Token cumulative**: ~629k / 720–1,070k (87.4% of total budget used)
+>
+> **Next action**: รอสั่ง `/plan-phase 4` เพื่อเริ่ม Phase 4 (Admin Backend)
 
 ## ห้ามทำ (Hard Rules)
 

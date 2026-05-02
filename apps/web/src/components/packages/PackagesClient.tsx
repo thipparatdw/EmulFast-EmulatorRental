@@ -45,9 +45,7 @@ export default function PackagesClient() {
   );
 
   const packages: Package[] =
-    (pkgData?.data as unknown as Package[]) ??
-    (pkgData?.data as { packages?: Package[] })?.packages ??
-    [];
+    (pkgData?.data as { packages?: Package[] })?.packages ?? [];
 
   const fcoinBalance = walletData?.data?.wallet?.balance ?? "0";
 

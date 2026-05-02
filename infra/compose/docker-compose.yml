@@ -129,9 +129,7 @@ services:
     privileged: true
     devices:
       - /dev/kvm:/dev/kvm
-    volumes:
       - /dev/binder:/dev/binder
-      - /dev/ashmem:/dev/ashmem
     ports:
       - "5555:5555"   # ADB port (orchestrator จะ map port dynamic ในช่วง 5555-5655)
     networks:

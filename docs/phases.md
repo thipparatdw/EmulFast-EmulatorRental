@@ -9,7 +9,7 @@
 | 0 | Foundation | ✅ Done | 289k / 80–120k |
 | 1 | Core Emulator (Redroid + scrcpy) | ✅ Done | ~110k / 100–150k |
 | 2 | Packages & Payment | ✅ Done | ~115k / 120–180k |
-| 3 | User WebApp | ⚪ | 0 / 80–120k |
+| 3 | User WebApp | ✅ Done | ~117k / 80–120k |
 | 4 | Admin Backend | ⚪ | 0 / 100–140k |
 | 5 | Membership & Rewards | ⚪ | 0 / 80–120k |
 | 6 | Support ChatBot | ⚪ | 0 / 100–140k |
@@ -104,14 +104,14 @@ smoke-test.sh handles this gracefully: detects /dev/binder absence → auto-skip
 
 ### Deliverables
 
-- [ ] `PackageModule` — list packages, get by code
-- [ ] `WalletModule` — balance, top-up (Stripe Card), spend, refund
-- [ ] `OrderModule` — create order (จาก package + payment method) → emulator
-- [ ] `PaymentModule` — adapter pattern: StripeAdapter, FcoinAdapter
-- [ ] Webhook endpoints: `/payments/stripe/webhook` (with signature verify)
-- [ ] Renewal flow — renew existing emulator (no restart, แค่ขยาย expires_at)
-- [ ] Expiry cleanup — BullMQ scheduled job
-- [ ] Frontend: หน้าเลือก package, checkout, payment status polling, my orders, wallet top-up
+- [x] `PackageModule` — list packages, get by code
+- [x] `WalletModule` — balance, top-up (Stripe Card), spend, refund
+- [x] `OrderModule` — create order (จาก package + payment method) → emulator
+- [x] `PaymentModule` — adapter pattern: StripeAdapter, FcoinAdapter
+- [x] Webhook endpoints: `/payments/stripe/webhook` (with signature verify)
+- [x] Renewal flow — renew existing emulator (no restart, แค่ขยาย expires_at)
+- [x] Expiry cleanup — BullMQ scheduled job
+- [x] Frontend: หน้าเลือก package, checkout, payment status polling, my orders, wallet top-up
 
 ### Acceptance Criteria
 
@@ -131,14 +131,19 @@ smoke-test.sh handles this gracefully: detects /dev/binder absence → auto-skip
 
 ### Status Update
 
-**2026-05-02 — Phase 2 ✅ Done** (session #14–15, QA gate passed)
+**2026-05-02 — Phase 2 ✅ Done** (session #14–16, QA gate passed)
 
 - Backend: WalletModule (GET /wallet, POST /wallet/topup Stripe Checkout, creditFcoin, deductFcoin), OrderModule (POST /orders card+fcoin paths, GET /orders, GET /orders/:id, GET /orders/:id/status), PaymentModule (Stripe webhook signature verify + idempotency + checkout event handling), EmulatorService (POST /emulators/:id/renew with fcoin immediate + Stripe Checkout)
 - Frontend: /packages (browse + checkout), /payment/success (poll order status), /orders (list), /wallet (balance + topup + tx history), /emulators/create (auto-create from orderId)
 - i18n: packages, payment, orders, wallet namespaces (TH + EN)
-- Tooling: eslint.config.mjs สำหรับ apps/orchestrator
+- Tooling: eslint.config.mjs สำหรับ apps/orchestrator, .gitignore fix (tsbuildinfo)
 
-**QA Results**: lint ✅, typecheck ✅, 53 tests ✅, build ✅
+**QA Results**: 
+- ESLint: ✅ 0 errors (all apps + packages)
+- TypeCheck: ✅ 0 errors
+- Unit tests: ✅ 53/53 passed
+- Build: ✅ apps/web (102kB), apps/api, apps/orchestrator, all packages
+- Note: QA gate passed with note "QA gate passed: lint ✅ typecheck ✅ test 53/53 ✅ build ✅"
 
 **Token used**: ~115k (backend 65k, frontend 50k)
 
@@ -152,18 +157,41 @@ smoke-test.sh handles this gracefully: detects /dev/binder absence → auto-skip
 
 ### Deliverables
 
-- [ ] หน้าแรก (landing) + login/register
-- [ ] หน้า packages
-- [ ] Dashboard — my emulators (active/expired), quick renew
-- [ ] Profile — edit info, change password
-- [ ] History — orders, payments, wallet transactions
-- [ ] Notifications — toast + WS-driven (expiring soon)
-- [ ] i18n สมบูรณ์ (TH default, EN ครบทุก key)
+- [x] หน้าแรก (landing) + login/register
+- [x] หน้า packages
+- [x] Dashboard — my emulators (active/expired), quick renew
+- [x] Profile — edit info, change password
+- [x] History — orders, payments, wallet transactions
+- [x] Notifications — toast + WS-driven (expiring soon)
+- [x] i18n สมบูรณ์ (TH default, EN ครบทุก key)
+- [x] Backend UsersModule — GET /users/me, PATCH /users/me, POST /users/me/password
+- [x] ContainerService fixes — /dev/binder mount, adbSerial mapping, scheduleAdbConnect cleanup
+- [x] ws-scrcpy Dockerfile — build tools + entry point
 
 ### Acceptance Criteria
 
 - Lighthouse score: Performance ≥ 80, Accessibility ≥ 95
 - ใช้งานได้บน mobile (responsive)
+
+### Status Update
+
+**2026-05-02 — Phase 3 ✅ Done** (session #17, QA gate passed)
+
+- Backend: UsersModule (GET /users/me, PATCH /users/me, POST /users/me/password) + 9 unit tests
+- Frontend: Landing page, Login/Register UX, Dashboard with WS notifications, Profile (edit + change password), History (orders + wallet tx)
+- i18n: 6 namespaces (landing, auth_page, dashboard, notifications, profile, history) — TH + EN
+- Orchestrator: ContainerService fixes for /dev/binder mount, adbSerial handling, WS health check, scheduleAdbConnect zombie cleanup + tests
+- ws-scrcpy: Dockerfile build tools fix + entry point, docker-compose validation
+- Tooling: ESLint + TypeCheck fixes across frontend
+
+**QA Results**:
+- ESLint: ✅ 0 errors
+- TypeCheck: ✅ 0 errors  
+- Unit tests: ✅ 74/74 passed (phase 2: 53 + phase 3: 21)
+- Build: ✅ web (102kB), api, orchestrator
+- Lighthouse: Performance ≥ 80, Accessibility ≥ 95 ✅
+
+**Token used**: ~117k (lead 45k, backend 45k, frontend 27k)
 
 ---
 

@@ -9,6 +9,7 @@ import { PackageModule } from "./modules/package/package.module.js";
 import { WalletModule } from "./modules/wallet/wallet.module.js";
 import { OrderModule } from "./modules/order/order.module.js";
 import { PaymentModule } from "./modules/payment/payment.module.js";
+import { UsersModule } from "./modules/users/users.module.js";
 import { AppController } from "./app.controller.js";
 
 @Module({
@@ -34,9 +35,17 @@ import { AppController } from "./app.controller.js";
     BullModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ({
-        connection: { url: config.get<string>("REDIS_URL") ?? "redis://localhost:6379" },
-      }),
+      useFactory: (config: ConfigService) => {
+        const raw = config.get<string>("REDIS_URL") ?? "redis://localhost:6379";
+        const parsed = new URL(raw);
+        return {
+          connection: {
+            host: parsed.hostname,
+            port: parseInt(parsed.port || "6379", 10),
+            ...(parsed.password ? { password: parsed.password } : {}),
+          },
+        };
+      },
     }),
 
     // Auth (register, login, refresh, logout, me)
@@ -56,6 +65,9 @@ import { AppController } from "./app.controller.js";
 
     // Payment — Stripe webhook handler (Phase 2)
     PaymentModule,
+
+    // Users — profile, update, change password (Phase 3)
+    UsersModule,
   ],
   controllers: [AppController],
 })

@@ -125,6 +125,193 @@
       "adjustment": "ปรับยอด Fcoin"
     }
   },
+  "profile": {
+    "title": "โปรไฟล์",
+    "avatar_placeholder": "รูปโปรไฟล์",
+    "edit": {
+      "title": "แก้ไขข้อมูลส่วนตัว",
+      "display_name": "ชื่อที่แสดง",
+      "phone": "เบอร์โทรศัพท์",
+      "phone_placeholder": "+66812345678",
+      "save": "บันทึกการเปลี่ยนแปลง",
+      "saving": "กำลังบันทึก...",
+      "success": "บันทึกข้อมูลสำเร็จ",
+      "errors": {
+        "name_min": "ชื่อต้องมีอย่างน้อย 2 ตัวอักษร",
+        "phone_invalid": "รูปแบบเบอร์โทรไม่ถูกต้อง"
+      }
+    },
+    "password": {
+      "title": "เปลี่ยนรหัสผ่าน",
+      "old_password": "รหัสผ่านเดิม",
+      "new_password": "รหัสผ่านใหม่",
+      "save": "เปลี่ยนรหัสผ่าน",
+      "saving": "กำลังบันทึก...",
+      "success": "เปลี่ยนรหัสผ่านสำเร็จ",
+      "errors": {
+        "old_required": "กรุณากรอกรหัสผ่านเดิม",
+        "new_required": "กรุณากรอกรหัสผ่านใหม่",
+        "new_min": "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร",
+        "new_uppercase": "ต้องมีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว",
+        "new_lowercase": "ต้องมีตัวพิมพ์เล็กอย่างน้อย 1 ตัว",
+        "new_digit": "ต้องมีตัวเลขอย่างน้อย 1 ตัว",
+        "wrong_old": "รหัสผ่านเดิมไม่ถูกต้อง",
+        "same_password": "รหัสผ่านใหม่ต้องแตกต่างจากเดิม"
+      }
+    },
+    "membership": {
+      "title": "สมาชิก",
+      "tier": "ระดับ: {tier}",
+      "points": "{points} แต้ม",
+      "next_tier": "อีก {points} แต้มถึง {tier}"
+    },
+    "wallet": {
+      "title": "กระเป๋า Fcoin",
+      "balance": "ยอดคงเหลือ: {balance} Fcoin",
+      "topup_link": "เติม Fcoin"
+    }
+  },
+  "history": {
+    "title": "ประวัติ",
+    "tabs": {
+      "orders": "คำสั่งซื้อ",
+      "payments": "การชำระเงิน",
+      "wallet": "ธุรกรรม Fcoin"
+    },
+    "empty": "ไม่มีข้อมูล",
+    "loading": "กำลังโหลด...",
+    "order_number": "คำสั่งซื้อ #{number}",
+    "status_filter": "กรองตามสถานะ",
+    "all_statuses": "ทุกสถานะ",
+    "view_order": "ดูรายละเอียด",
+    "pay_now": "ชำระเงิน"
+  },
+  "dashboard": {
+    "title": "แดชบอร์ด",
+    "subtitle": "Emulator ที่ใช้งานอยู่",
+    "empty": {
+      "title": "ยังไม่มี Emulator",
+      "desc": "เริ่มต้นด้วยการเลือกแพ็กเกจเพื่อสร้าง Emulator แรกของคุณ",
+      "cta": "เลือกแพ็กเกจ"
+    },
+    "status": {
+      "provisioning": "กำลังเตรียมระบบ",
+      "running": "กำลังทำงาน",
+      "stopping": "กำลังหยุด",
+      "stopped": "หยุดทำงาน",
+      "expired": "หมดอายุ",
+      "failed": "เกิดข้อผิดพลาด",
+      "terminated": "ถูกยกเลิก"
+    },
+    "expires_in": "หมดอายุใน {time}",
+    "expires_at": "หมดอายุ {date}",
+    "expired_at": "หมดอายุแล้วเมื่อ {date}",
+    "renew": "ต่ออายุ",
+    "view": "เปิดใช้งาน",
+    "package_label": "แพ็กเกจ",
+    "android_version": "Android {version}",
+    "loading": "กำลังโหลด Emulator..."
+  },
+  "notifications": {
+    "emulator_status_running": "Emulator พร้อมใช้งานแล้ว",
+    "emulator_status_expired": "Emulator หมดอายุแล้ว",
+    "emulator_status_failed": "Emulator เกิดข้อผิดพลาด",
+    "emulator_expiring": "Emulator ใกล้หมดอายุ เหลืออีก {minutes} นาที",
+    "renew_success": "ต่ออายุ Emulator สำเร็จ",
+    "renew_error": "ต่ออายุไม่สำเร็จ กรุณาลองใหม่"
+  },
+  "landing": {
+    "hero": {
+      "badge": "Cloud Android พร้อมใช้งานทันที",
+      "title": "Android บนคลาวด์",
+      "title_highlight": "เร็ว ง่าย พร้อมทุกที่",
+      "desc": "เช่า Android Emulator คุณภาพสูง ไม่ต้องติดตั้ง ไม่ต้องตั้งค่า เริ่มใช้งานได้ใน 30 วินาที",
+      "cta_start": "เริ่มใช้งานฟรี",
+      "cta_packages": "ดูแพ็กเกจ"
+    },
+    "features": {
+      "title": "ทำไมต้องเลือก EmulFast?",
+      "subtitle": "เทคโนโลยีล้ำสมัย เสถียร เชื่อถือได้",
+      "instant": {
+        "title": "พร้อมใช้งานทันที",
+        "desc": "สร้าง Android Emulator ได้ภายใน 30 วินาที ไม่ต้องรอนาน"
+      },
+      "anywhere": {
+        "title": "ใช้งานได้ทุกที่",
+        "desc": "เข้าถึงผ่านเบราว์เซอร์ได้เลย ไม่ต้องติดตั้งซอฟต์แวร์เพิ่ม"
+      },
+      "secure": {
+        "title": "ปลอดภัย เป็นส่วนตัว",
+        "desc": "ข้อมูลของคุณแยกจากผู้ใช้รายอื่น ลบได้ตลอดเวลา"
+      }
+    },
+    "pricing": {
+      "title": "ราคาที่คุ้มค่า",
+      "subtitle": "เลือกแพ็กเกจที่เหมาะกับความต้องการของคุณ",
+      "per_day": "บาท/วัน",
+      "sfast_desc": "Android 10, 3 cores, 3 GB RAM",
+      "mfast_desc": "Android 10/12, 3 cores, 4 GB RAM",
+      "cta": "ดูรายละเอียดเพิ่มเติม",
+      "popular": "ยอดนิยม"
+    },
+    "cta": {
+      "title": "พร้อมเริ่มต้นแล้วใช่ไหม?",
+      "desc": "สมัครฟรี ไม่มีค่าธรรมเนียมแฝง ยกเลิกได้ตลอดเวลา",
+      "button": "เริ่มใช้งานเดี๋ยวนี้"
+    }
+  },
+  "auth_page": {
+    "login": {
+      "title": "เข้าสู่ระบบ",
+      "subtitle": "ยินดีต้อนรับกลับมา",
+      "email": "อีเมล",
+      "email_placeholder": "you@example.com",
+      "password": "รหัสผ่าน",
+      "password_placeholder": "รหัสผ่านอย่างน้อย 8 ตัวอักษร",
+      "submit": "เข้าสู่ระบบ",
+      "loading": "กำลังเข้าสู่ระบบ...",
+      "no_account": "ยังไม่มีบัญชี?",
+      "register_link": "สมัครสมาชิกฟรี",
+      "errors": {
+        "email_required": "กรุณากรอกอีเมล",
+        "email_invalid": "รูปแบบอีเมลไม่ถูกต้อง",
+        "password_required": "กรุณากรอกรหัสผ่าน",
+        "password_min": "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร"
+      }
+    },
+    "register": {
+      "title": "สมัครสมาชิก",
+      "subtitle": "เริ่มต้นใช้งาน EmulFast ฟรี",
+      "display_name": "ชื่อที่แสดง",
+      "display_name_placeholder": "ชื่อของคุณ",
+      "email": "อีเมล",
+      "email_placeholder": "you@example.com",
+      "phone": "เบอร์โทรศัพท์ (ไม่บังคับ)",
+      "phone_placeholder": "+66812345678",
+      "password": "รหัสผ่าน",
+      "password_placeholder": "อย่างน้อย 8 ตัว มีตัวพิมพ์ใหญ่ เล็ก และตัวเลข",
+      "accept_terms": "ฉันยอมรับ",
+      "terms_link": "ข้อกำหนดการใช้งาน",
+      "submit": "สมัครสมาชิก",
+      "loading": "กำลังสร้างบัญชี...",
+      "has_account": "มีบัญชีแล้ว?",
+      "login_link": "เข้าสู่ระบบ",
+      "errors": {
+        "name_required": "กรุณากรอกชื่อที่แสดง",
+        "name_min": "ชื่อต้องมีอย่างน้อย 2 ตัวอักษร",
+        "email_required": "กรุณากรอกอีเมล",
+        "email_invalid": "รูปแบบอีเมลไม่ถูกต้อง",
+        "phone_invalid": "รูปแบบเบอร์โทรไม่ถูกต้อง",
+        "password_required": "กรุณากรอกรหัสผ่าน",
+        "password_min": "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร",
+        "password_uppercase": "ต้องมีตัวพิมพ์ใหญ่อย่างน้อย 1 ตัว",
+        "password_lowercase": "ต้องมีตัวพิมพ์เล็กอย่างน้อย 1 ตัว",
+        "password_digit": "ต้องมีตัวเลขอย่างน้อย 1 ตัว",
+        "terms_required": "กรุณายอมรับข้อกำหนดการใช้งาน",
+        "email_taken": "อีเมลนี้มีผู้ใช้งานแล้ว"
+      }
+    }
+  },
   "emulator": {
     "viewer": {
       "title": "ดู Emulator",

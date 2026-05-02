@@ -16,12 +16,13 @@ const PACKAGE_DOCKER_CONFIG: Record<string, PackageDockerConfig> = {
   MFAST: { memory: 4 * 1024 * 1024 * 1024, nanoCpus: 3e9 },
 };
 
-const REDROID_IMAGE = 'redroid/redroid:10.0.0_latest';
+const REDROID_IMAGE = 'redroid/redroid:10.0.0-latest';
 
 export interface CreateContainerResult {
   containerId: string;
   containerName: string;
   adbPort: number;
+  adbSerial: string;
   websocketPath: string;
 }
 
@@ -84,6 +85,73 @@ export class ContainerService implements OnModuleInit {
     );
   }
 
+  private async getContainerIpOnNetwork(containerId: string, networkName: string): Promise<string | null> {
+    try {
+      const info = await this.docker.getContainer(containerId).inspect();
+      return info.NetworkSettings.Networks[networkName]?.IPAddress ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async execInWsScrcpy(wsContainer: string, cmd: string[]): Promise<void> {
+    const exec = await this.docker.getContainer(wsContainer).exec({
+      Cmd: cmd,
+      AttachStdout: false,
+      AttachStderr: false,
+    });
+    await exec.start({ Detach: true });
+  }
+
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private scheduleAdbConnect(adbSerial: string): void {
+    const wsContainer = this.config.get<string>('WS_SCRCPY_CONTAINER') ?? 'emulfast-ws-scrcpy';
+    // Android needs ~30s to fully boot (zygote64 + system_server + launcher3)
+    setTimeout(() => {
+      void (async () => {
+        try {
+          // Step 1: initial connect so we can reach adb shell
+          await this.execInWsScrcpy(wsContainer, ['adb', 'connect', adbSerial]);
+          await this.sleep(3_000);
+
+          // Step 2: kill zombie app_process left from prior scrcpy attempts (best-effort)
+          await this.execInWsScrcpy(wsContainer, [
+            'adb', '-s', adbSerial, 'shell',
+            "for p in $(ps | grep app_proc | grep shell | awk '{print $2}'); do kill -9 $p 2>/dev/null; done",
+          ]).catch(() => { /* best-effort */ });
+          await this.sleep(1_000);
+
+          // Step 3: disconnect then reconnect — triggers ws-scrcpy device-add event on a clean slate
+          await this.execInWsScrcpy(wsContainer, ['adb', 'disconnect', adbSerial]);
+          await this.sleep(1_000);
+          await this.execInWsScrcpy(wsContainer, ['adb', 'connect', adbSerial]);
+
+          this.logger.log(`ADB connected: ${adbSerial}`);
+        } catch (err) {
+          this.logger.warn(`scheduleAdbConnect(${adbSerial}) failed: ${String(err)}`);
+        }
+      })();
+    }, 30_000);
+  }
+
+  private async adbDisconnect(adbSerial: string): Promise<void> {
+    const wsContainer = this.config.get<string>('WS_SCRCPY_CONTAINER') ?? 'emulfast-ws-scrcpy';
+    try {
+      const exec = await this.docker.getContainer(wsContainer).exec({
+        Cmd: ['adb', 'disconnect', adbSerial],
+        AttachStdout: false,
+        AttachStderr: false,
+      });
+      await exec.start({ Detach: true });
+      this.logger.log(`ADB disconnected: ${adbSerial}`);
+    } catch (err) {
+      this.logger.warn(`adbDisconnect(${adbSerial}) failed: ${String(err)}`);
+    }
+  }
+
   async createContainer(dto: CreateContainerDto): Promise<CreateContainerResult> {
     const config = PACKAGE_DOCKER_CONFIG[dto.packageCode];
     if (!config) {
@@ -118,6 +186,11 @@ export class ContainerService implements OnModuleInit {
               PathInContainer: '/dev/kvm',
               CgroupPermissions: 'rwm',
             },
+            {
+              PathOnHost: '/dev/binder',
+              PathInContainer: '/dev/binder',
+              CgroupPermissions: 'rwm',
+            },
           ],
           NetworkMode: redroidNetwork,
           PortBindings: {
@@ -132,11 +205,18 @@ export class ContainerService implements OnModuleInit {
       const shortId = container.id.slice(0, 12);
       this.logger.log(`Created container ${containerName} (${shortId}) on port ${adbPort}`);
 
+      const containerIp = await this.getContainerIpOnNetwork(container.id, redroidNetwork);
+      const adbSerial = containerIp ? `${containerIp}:5555` : `127.0.0.1:${adbPort}`;
+      if (containerIp) {
+        this.scheduleAdbConnect(adbSerial);
+      }
+
       return {
         containerId: container.id,
         containerName,
         adbPort,
-        websocketPath: `/ws/scrcpy/${shortId}`,
+        adbSerial,
+        websocketPath: `/?action=stream&udid=${encodeURIComponent(adbSerial)}`,
       };
     } catch (err: unknown) {
       if (err instanceof HttpException) throw err;
@@ -182,6 +262,22 @@ export class ContainerService implements OnModuleInit {
   async deleteContainer(id: string): Promise<void> {
     try {
       const container = this.docker.getContainer(id);
+
+      // Disconnect ADB from ws-scrcpy before removing (best-effort)
+      let info: Awaited<ReturnType<typeof container.inspect>> | null = null;
+      try {
+        info = await container.inspect();
+      } catch {
+        // container may not be inspectable — skip ADB disconnect
+      }
+      if (info) {
+        const networkName = Object.keys(info.NetworkSettings.Networks)[0];
+        const ip = networkName ? (info.NetworkSettings.Networks[networkName]?.IPAddress ?? null) : null;
+        if (ip) {
+          await this.adbDisconnect(`${ip}:5555`);
+        }
+      }
+
       try {
         await container.stop({ t: 5 });
       } catch (stopErr: unknown) {

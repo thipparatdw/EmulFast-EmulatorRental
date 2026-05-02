@@ -7,8 +7,8 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# Install git สำหรับ clone source
-RUN apk add --no-cache git
+# Install git + build tools (python3/make/g++ สำหรับ node-pty native module)
+RUN apk add --no-cache git python3 make g++
 
 # Clone official ws-scrcpy repo (latest master)
 RUN git clone --depth 1 --branch master https://github.com/NetrisTV/ws-scrcpy.git .
@@ -35,6 +35,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
   CMD wget -qO- http://localhost:8000 || exit 1
 
-# NOTE: ถ้า dist/server/server.js ไม่มี (entry point เปลี่ยนใน future version)
-# ให้แทนด้วย: CMD ["npx", "serve", "-s", "dist", "-l", "8000"]
-CMD ["node", "dist/server/server.js"]
+CMD ["node", "dist/index.js"]

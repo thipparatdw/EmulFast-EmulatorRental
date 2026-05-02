@@ -1,0 +1,44 @@
+nb@emulfast-node:~/emulfast/EmulFast-EmulatorRental$ echo "binder_linux" | sudo tee /etc/modules-load.d/redroid.conf
+binder_linux
+nb@emulfast-node:~/emulfast/EmulFast-EmulatorRental$ echo "options binder_linux num_devices=10" | sudo tee /etc/modprobe.d/binder_linux.conf
+options binder_linux num_devices=10
+nb@emulfast-node:~/emulfast/EmulFast-EmulatorRental$ sudo tee /etc/systemd/system/redroid-binder.service << 'EOF'
+[Unit]
+Description=Create Redroid binder device nodes
+After=systemd-modules-load.service
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'for i in $(seq 0 9); do [ -c /dev/binder$i ] || mknod /dev/binder$i c 239 $i; chmod 0666 /dev/binder$i; done; [ -L /dev/binder ] || ln -sf /dev/binder0 /dev/binder'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+[Unit]
+Description=Create Redroid binder device nodes
+After=systemd-modules-load.service
+DefaultDependencies=no
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash -c 'for i in $(seq 0 9); do [ -c /dev/binder$i ] || mknod /dev/binder$i c 239 $i; chmod 0666 /dev/binder$i; done; [ -L /dev/binder ] || ln -sf /dev/binder0 /dev/binder'
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+nb@emulfast-node:~/emulfast/EmulFast-EmulatorRental$ sudo systemctl daemon-reload
+nb@emulfast-node:~/emulfast/EmulFast-EmulatorRental$ sudo systemctl enable redroid-binder.service
+Created symlink /etc/systemd/system/multi-user.target.wants/redroid-binder.service → /etc/systemd/system/redroid-binder.service.
+nb@emulfast-node:~/emulfast/EmulFast-EmulatorRental$ sudo systemctl start redroid-binder.service
+nb@emulfast-node:~/emulfast/EmulFast-EmulatorRental$ systemctl status redroid-binder.service --no-pager
+● redroid-binder.service - Create Redroid binder device nodes
+     Loaded: loaded (/etc/systemd/system/redroid-binder.service; enabled; vendor preset: enabled)
+     Active: active (exited) since Sat 2026-05-02 06:31:15 UTC; 6s ago
+    Process: 49399 ExecStart=/bin/bash -c for i in $(seq 0 9); do [ -c /dev/binder$i ] || mknod /dev/binder$i c 239 $i; chmod 0666 /dev/binder$i; done; [ -L /dev/binder ] || ln -sf /dev/binder0 /dev/binder (code=exited, status=0/SUCCESS)
+   Main PID: 49399 (code=exited, status=0/SUCCESS)
+        CPU: 11ms
+
+May 02 06:31:15 emulfast-node systemd[1]: Starting Create Redroid binder device nodes...
+May 02 06:31:15 emulfast-node systemd[1]: Finished Create Redroid binder device nodes.

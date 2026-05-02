@@ -9,12 +9,12 @@
 | 0 | Foundation | 80–120k | 289k | -141% | ✅ |
 | 1 | Core Emulator | 100–150k | ~110k | ~40k | ✅ |
 | 2 | Packages & Payment | 120–180k | ~115k | ~5k | ✅ |
-| 3 | User WebApp | 80–120k | 0 | 100% | ⚪ |
+| 3 | User WebApp | 80–120k | ~117k | -46% | ✅ |
 | 4 | Admin Backend | 100–140k | 0 | 100% | ⚪ |
 | 5 | Membership & Rewards | 80–120k | 0 | 100% | ⚪ |
 | 6 | Support ChatBot | 100–140k | 0 | 100% | ⚪ |
 | 7 | Hardening | 60–100k | 0 | 100% | ⚪ |
-| **รวม** | | **720–1,070k** | **~498k** | **~53%** | |
+| **รวม** | | **720–1,070k** | **~631k** | **~41%** | |
 
 ## Cost Tier (อ้างอิง pricing public — อาจปรับตามจริง)
 
@@ -42,7 +42,11 @@
 | 12 | 2026-05-02 | 1 | lead, backend×2, devops, frontend, qa×3, reporter | Task 2–4: mapToResponse fix, orchestrator+ws-scrcpy, emulator viewer, smoke-test.sh | ~85k / 0 | ~374k | API bug fix + docker-compose orchestrator/ws-scrcpy + web emulator viewer page |
 | 13 | 2026-05-02 | 1 | reporter | Phase 1 close: docs update (phases.md, token-budget.md, CLAUDE.md) | ~25k / 0 | ~399k | Redroid defer note, smoke-test context, cumulative token update |
 | 14 | 2026-05-02 | 2 | lead, backend×2, frontend, qa | Tasks 2.1–2.6: WalletModule, OrderModule, PaymentModule (Stripe webhook + idempotency), EmulatorService renewal, frontend pages, i18n | ~95k / 0 | ~494k | API + web design + Stripe adapter + QA |
-| 15 | 2026-05-02 | 2 | reporter | Phase 2 close: phases.md (status + tasks), token-budget.md, CLAUDE.md update | ~4k / 0 | ~498k | Phase 2 ✅ Done, next Phase 3 signal ready |
+| 15 | 2026-05-02 | 2 | qa + lead | QA rerun gate (53 tests + build verify) + .gitignore fix (tsbuildinfo) | ~8k / 0 | ~502k | ESLint ✅ TypeCheck ✅ Tests ✅ Build ✅, gitignore cleanup |
+| 16 | 2026-05-02 | 2 | reporter | Phase 2 sign-off: phases.md (checklist update + QA note), token-budget.md (session row 15), CLAUDE.md (Current State) | ~6k / 0 | ~508k | Phase 2 ✅ Done, Phase 3 signal ready |
+| 17 | 2026-05-02 | 3 | lead, backend, frontend, orchestrator, qa | UsersModule (GET/PATCH /users/me, POST /users/me/password + 9 tests), Landing/Auth/Dashboard/Profile/History pages, 6 i18n namespaces (TH+EN), ContainerService /dev/binder + adbSerial fixes, ws-scrcpy Dockerfile | ~117k / 0 | ~625k | 74 tests total ✅, Lighthouse score ≥80/95 ✅ |
+| 18 | 2026-05-02 | 3 | reporter | Phase 3 sign-off: phases.md, token-budget.md, CLAUDE.md | ~4k / 0 | ~629k | Phase 3 ✅ Done, Phase 4 (Admin Backend) ready |
+| 19 | 2026-05-02 | 3 | qa, reporter | Ship gate: test rerun (74 tests), CHANGELOG.md creation + token-budget update | ~5k / 0 | ~634k | Phase 3 ship ✅, 88.1% of total budget used |
 
 ## Tips ประหยัด Token
 

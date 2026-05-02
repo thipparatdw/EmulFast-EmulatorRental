@@ -125,6 +125,193 @@
       "adjustment": "Fcoin Adjustment"
     }
   },
+  "profile": {
+    "title": "Profile",
+    "avatar_placeholder": "Profile picture",
+    "edit": {
+      "title": "Edit Profile",
+      "display_name": "Display Name",
+      "phone": "Phone number",
+      "phone_placeholder": "+66812345678",
+      "save": "Save changes",
+      "saving": "Saving...",
+      "success": "Profile saved successfully",
+      "errors": {
+        "name_min": "Name must be at least 2 characters",
+        "phone_invalid": "Invalid phone format"
+      }
+    },
+    "password": {
+      "title": "Change Password",
+      "old_password": "Current password",
+      "new_password": "New password",
+      "save": "Change password",
+      "saving": "Saving...",
+      "success": "Password changed successfully",
+      "errors": {
+        "old_required": "Current password is required",
+        "new_required": "New password is required",
+        "new_min": "Password must be at least 8 characters",
+        "new_uppercase": "Must include at least one uppercase letter",
+        "new_lowercase": "Must include at least one lowercase letter",
+        "new_digit": "Must include at least one digit",
+        "wrong_old": "Current password is incorrect",
+        "same_password": "New password must differ from current"
+      }
+    },
+    "membership": {
+      "title": "Membership",
+      "tier": "Tier: {tier}",
+      "points": "{points} points",
+      "next_tier": "{points} more points to reach {tier}"
+    },
+    "wallet": {
+      "title": "Fcoin Wallet",
+      "balance": "Balance: {balance} Fcoin",
+      "topup_link": "Top up Fcoin"
+    }
+  },
+  "history": {
+    "title": "History",
+    "tabs": {
+      "orders": "Orders",
+      "payments": "Payments",
+      "wallet": "Fcoin Transactions"
+    },
+    "empty": "No records found",
+    "loading": "Loading...",
+    "order_number": "Order #{number}",
+    "status_filter": "Filter by status",
+    "all_statuses": "All statuses",
+    "view_order": "View details",
+    "pay_now": "Pay Now"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "subtitle": "Active Emulators",
+    "empty": {
+      "title": "No Emulators Yet",
+      "desc": "Get started by choosing a package to create your first emulator.",
+      "cta": "Browse Packages"
+    },
+    "status": {
+      "provisioning": "Provisioning",
+      "running": "Running",
+      "stopping": "Stopping",
+      "stopped": "Stopped",
+      "expired": "Expired",
+      "failed": "Failed",
+      "terminated": "Terminated"
+    },
+    "expires_in": "Expires in {time}",
+    "expires_at": "Expires {date}",
+    "expired_at": "Expired {date}",
+    "renew": "Renew",
+    "view": "Open",
+    "package_label": "Package",
+    "android_version": "Android {version}",
+    "loading": "Loading emulators..."
+  },
+  "notifications": {
+    "emulator_status_running": "Emulator is ready",
+    "emulator_status_expired": "Emulator has expired",
+    "emulator_status_failed": "Emulator encountered an error",
+    "emulator_expiring": "Emulator expiring in {minutes} minutes",
+    "renew_success": "Emulator renewed successfully",
+    "renew_error": "Renewal failed. Please try again."
+  },
+  "landing": {
+    "hero": {
+      "badge": "Cloud Android — Ready in seconds",
+      "title": "Android in the Cloud",
+      "title_highlight": "Fast, Simple, Anywhere",
+      "desc": "Rent a high-performance Android Emulator — no installation, no configuration. Start in 30 seconds.",
+      "cta_start": "Get started free",
+      "cta_packages": "View packages"
+    },
+    "features": {
+      "title": "Why EmulFast?",
+      "subtitle": "Cutting-edge technology — stable and reliable",
+      "instant": {
+        "title": "Instant Access",
+        "desc": "Spin up an Android Emulator in 30 seconds. No waiting."
+      },
+      "anywhere": {
+        "title": "Use Anywhere",
+        "desc": "Access directly from your browser. No extra software needed."
+      },
+      "secure": {
+        "title": "Secure & Private",
+        "desc": "Your data is isolated from other users. Delete anytime."
+      }
+    },
+    "pricing": {
+      "title": "Affordable Pricing",
+      "subtitle": "Pick the package that fits your needs",
+      "per_day": "THB/day",
+      "sfast_desc": "Android 10, 3 cores, 3 GB RAM",
+      "mfast_desc": "Android 10/12, 3 cores, 4 GB RAM",
+      "cta": "View full details",
+      "popular": "Popular"
+    },
+    "cta": {
+      "title": "Ready to get started?",
+      "desc": "Sign up for free. No hidden fees. Cancel anytime.",
+      "button": "Start now"
+    }
+  },
+  "auth_page": {
+    "login": {
+      "title": "Sign In",
+      "subtitle": "Welcome back",
+      "email": "Email",
+      "email_placeholder": "you@example.com",
+      "password": "Password",
+      "password_placeholder": "At least 8 characters",
+      "submit": "Sign In",
+      "loading": "Signing in...",
+      "no_account": "Don't have an account?",
+      "register_link": "Sign up free",
+      "errors": {
+        "email_required": "Email is required",
+        "email_invalid": "Invalid email format",
+        "password_required": "Password is required",
+        "password_min": "Password must be at least 8 characters"
+      }
+    },
+    "register": {
+      "title": "Create Account",
+      "subtitle": "Start using EmulFast for free",
+      "display_name": "Display Name",
+      "display_name_placeholder": "Your name",
+      "email": "Email",
+      "email_placeholder": "you@example.com",
+      "phone": "Phone number (optional)",
+      "phone_placeholder": "+66812345678",
+      "password": "Password",
+      "password_placeholder": "Min 8 chars with uppercase, lowercase, digit",
+      "accept_terms": "I agree to the",
+      "terms_link": "Terms of Service",
+      "submit": "Create Account",
+      "loading": "Creating account...",
+      "has_account": "Already have an account?",
+      "login_link": "Sign in",
+      "errors": {
+        "name_required": "Display name is required",
+        "name_min": "Name must be at least 2 characters",
+        "email_required": "Email is required",
+        "email_invalid": "Invalid email format",
+        "phone_invalid": "Invalid phone format",
+        "password_required": "Password is required",
+        "password_min": "Password must be at least 8 characters",
+        "password_uppercase": "Must include at least one uppercase letter",
+        "password_lowercase": "Must include at least one lowercase letter",
+        "password_digit": "Must include at least one digit",
+        "terms_required": "You must accept the terms",
+        "email_taken": "This email is already registered"
+      }
+    }
+  },
   "emulator": {
     "viewer": {
       "title": "Emulator Viewer",
