@@ -69,6 +69,7 @@ export interface ScrcpyCanvasProps {
   className?: string;
   onConnected?: () => void;
   onDisconnected?: () => void;
+  onFirstFrame?: () => void;
 }
 
 export function ScrcpyCanvas({
@@ -76,6 +77,7 @@ export function ScrcpyCanvas({
   className,
   onConnected,
   onDisconnected,
+  onFirstFrame,
 }: ScrcpyCanvasProps) {
   const canvasRef   = useRef<HTMLCanvasElement>(null);
   const wsRef       = useRef<WebSocket | null>(null);
@@ -212,9 +214,14 @@ export function ScrcpyCanvas({
     devWRef.current   = 0;
     devHRef.current   = 0;
 
+    let firstFrameFired = false;
     const decoder = new VideoDecoder({
       output: (frame) => {
         framesRef.current.push(frame);
+        if (!firstFrameFired) {
+          firstFrameFired = true;
+          onFirstFrame?.();
+        }
         if (!rafRef.current) rafRef.current = requestAnimationFrame(drawLoop);
       },
       error: (err) => console.error("[ScrcpyCanvas] decoder error:", err),
@@ -243,7 +250,7 @@ export function ScrcpyCanvas({
       framesRef.current.forEach((f) => f.close());
       framesRef.current = [];
     };
-  }, [websocketUrl, processNal, drawLoop, onConnected, onDisconnected]);
+  }, [websocketUrl, processNal, drawLoop, onConnected, onDisconnected, onFirstFrame]);
 
   return (
     <canvas

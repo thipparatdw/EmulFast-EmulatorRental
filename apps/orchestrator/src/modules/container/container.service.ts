@@ -19,7 +19,8 @@ const PACKAGE_DOCKER_CONFIG: Record<string, PackageDockerConfig> = {
   MFAST: { memory: 3.0 * 1024 * 1024 * 1024, nanoCpus: 1.5e9, cpuShares: 512 },
 };
 
-const REDROID_IMAGE = 'redroid/redroid:10.0.0-latest';
+const REDROID_IMAGE_ANDROID_10 = 'redroid/redroid:10.0.0-latest';
+const REDROID_IMAGE_ANDROID_12 = 'redroid/redroid:12.0.0-latest';
 
 export interface CreateContainerResult {
   containerId: string;
@@ -47,12 +48,20 @@ export class ContainerService implements OnModuleInit {
 
   constructor(private readonly config: ConfigService) {}
 
+  private resolveDockerOptions(): Dockerode.DockerOptions {
+    const host = process.env['DOCKER_HOST'];
+    if (host?.startsWith('unix://')) return { socketPath: host.replace('unix://', '') };
+    if (host?.startsWith('npipe://')) return { socketPath: host.replace('npipe://', '') };
+    // auto-detect: Windows Docker Desktop uses named pipe, Linux uses unix socket
+    return process.platform === 'win32'
+      ? { socketPath: '//./pipe/docker_engine' }
+      : { socketPath: '/var/run/docker.sock' };
+  }
+
   onModuleInit(): void {
-    this.docker = new Dockerode({
-      socketPath: process.env['DOCKER_HOST']?.startsWith('unix://')
-        ? process.env['DOCKER_HOST'].replace('unix://', '')
-        : '/var/run/docker.sock',
-    });
+    const opts = this.resolveDockerOptions();
+    this.docker = new Dockerode(opts);
+    this.logger.log(`Docker connected via ${'socketPath' in opts ? opts.socketPath : 'tcp'}`);
 
     const portRange = this.config.get<string>('ADB_PORT_RANGE') ?? '5555-5655';
     const [minStr, maxStr] = portRange.split('-');
@@ -110,6 +119,23 @@ export class ContainerService implements OnModuleInit {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  private async ensureImage(image: string): Promise<void> {
+    try {
+      await this.docker.getImage(image).inspect();
+    } catch {
+      this.logger.log(`Pulling image ${image}...`);
+      await new Promise<void>((resolve, reject) => {
+        this.docker.pull(image, (err: Error | null, stream: NodeJS.ReadableStream) => {
+          if (err) { reject(err); return; }
+          this.docker.modem.followProgress(stream, (pullErr: Error | null) => {
+            if (pullErr) reject(pullErr);
+            else { this.logger.log(`Image pulled: ${image}`); resolve(); }
+          });
+        });
+      });
+    }
+  }
+
   private scheduleAdbConnect(adbSerial: string): void {
     const wsContainer = this.config.get<string>('WS_SCRCPY_CONTAINER') ?? 'emulfast-ws-scrcpy';
     // Android needs ~30s to fully boot (zygote64 + system_server + launcher3)
@@ -164,14 +190,33 @@ export class ContainerService implements OnModuleInit {
       );
     }
 
+    // DEV_MOCK=true → ข้ามการสร้าง container จริง (Windows / CI env ที่ไม่มี /dev/binder)
+    if (this.config.get<string>('DEV_MOCK') === 'true') {
+      const suffix = crypto.randomBytes(3).toString('hex');
+      const fakeId = `mock${suffix}${'0'.repeat(52)}`.slice(0, 64);
+      const containerName = `emulfast-emu-mock-${suffix}`;
+      this.logger.warn(`DEV_MOCK: skipping real container — returning mock ${containerName}`);
+      return {
+        containerId: fakeId,
+        containerName,
+        adbPort: this.portMin,
+        adbSerial: `127.0.0.1:${this.portMin}`,
+        websocketPath: `/?action=stream&udid=${encodeURIComponent(`127.0.0.1:${this.portMin}`)}`,
+      };
+    }
+
     const adbPort = await this.allocatePort();
     const suffix = crypto.randomBytes(3).toString('hex');
     const containerName = `emulfast-emu-${dto.userId.slice(-6)}-${suffix}`;
-    const redroidNetwork = process.env['REDROID_NETWORK'] ?? 'emulfast-redroid';
+    const redroidNetwork = this.config.get<string>('REDROID_NETWORK') ?? 'emulfast-redroid';
+    const image = dto.androidVersion === '12' ? REDROID_IMAGE_ANDROID_12 : REDROID_IMAGE_ANDROID_10;
+
+    // Pull image if not present locally
+    await this.ensureImage(image);
 
     try {
       const container = await this.docker.createContainer({
-        Image: REDROID_IMAGE,
+        Image: image,
         name: containerName,
         Env: [
           'ro.product.cpu.abilist=x86_64',
@@ -235,6 +280,9 @@ export class ContainerService implements OnModuleInit {
   }
 
   async getContainer(id: string): Promise<ContainerInfo> {
+    if (id.startsWith('mock')) {
+      return { id, name: `emulfast-emu-mock-${id.slice(4, 10)}`, status: 'running', state: 'running', image: 'mock', created: Date.now() };
+    }
     try {
       const container = this.docker.getContainer(id);
       const info = await container.inspect();

@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import { useTranslations, useLocale } from "next-intl";
 import Link from "next/link";
 import useSWR from "swr";
 import { useEmulatorSocket } from "@/hooks/useEmulatorSocket";
+import { ScrcpyCanvas } from "@/components/emulator/ScrcpyCanvas";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import type { EmulatorResponse, EmulatorStatus } from "@emulfast/shared";
 import type { ApiResponse } from "@emulfast/shared";
@@ -74,6 +75,27 @@ export default function EmulatorViewer({ emulatorId }: EmulatorViewerProps) {
   const [isTerminating, setIsTerminating] = useState(false);
   const [terminateError, setTerminateError] = useState<string | null>(null);
 
+  // ── Stream state ──────────────────────────────────────────────────────────
+  const [isStreamConnected, setIsStreamConnected] = useState(false);
+  const [isStreamReady, setIsStreamReady] = useState(false);
+  // increment to force-remount ScrcpyCanvas (reconnect WS)
+  const [streamKey, setStreamKey] = useState(0);
+  const isStreamConnectedRef = useRef(false);
+
+  const handleStreamConnected = useCallback(() => {
+    setIsStreamConnected(true);
+    isStreamConnectedRef.current = true;
+  }, []);
+
+  const handleStreamDisconnected = useCallback(() => {
+    setIsStreamConnected(false);
+    setIsStreamReady(false);
+    isStreamConnectedRef.current = false;
+  }, []);
+
+  const handleFirstFrame = useCallback(() => setIsStreamReady(true), []);
+
+  // ── Data fetching ─────────────────────────────────────────────────────────
   const { data, error, isLoading, mutate } = useSWR<ApiResponse<{ emulator: EmulatorResponse }>>(
     `/emulators/${emulatorId}`,
     (path: string) => apiFetch<ApiResponse<{ emulator: EmulatorResponse }>>(path),
@@ -100,8 +122,26 @@ export default function EmulatorViewer({ emulatorId }: EmulatorViewerProps) {
     [mutate],
   );
 
-  const { minutesLeft, isConnected } = useEmulatorSocket(emulatorId, handleStatusChange);
+  const { minutesLeft, isConnected: isSocketConnected } = useEmulatorSocket(emulatorId, handleStatusChange);
 
+  // ── Reconnect stream when user returns to tab ─────────────────────────────
+  const emulator = data?.data.emulator;
+  const isRunning = emulator?.status === "running";
+  const wsUrl = isRunning && emulator?.websocketUrl ? emulator.websocketUrl : null;
+
+  useEffect(() => {
+    if (!wsUrl) return;
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible" && !isStreamConnectedRef.current) {
+        setStreamKey((k) => k + 1);
+        setIsStreamReady(false);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [wsUrl]);
+
+  // ── Terminate ─────────────────────────────────────────────────────────────
   const handleTerminate = async () => {
     setIsTerminating(true);
     setTerminateError(null);
@@ -116,7 +156,7 @@ export default function EmulatorViewer({ emulatorId }: EmulatorViewerProps) {
     }
   };
 
-  // ─── Loading ───────────────────────────────────────────────────────────────
+  // ── Loading ───────────────────────────────────────────────────────────────
 
   if (isLoading) {
     return (
@@ -136,7 +176,7 @@ export default function EmulatorViewer({ emulatorId }: EmulatorViewerProps) {
     );
   }
 
-  if (error || !data) {
+  if (error || !data || !emulator) {
     return (
       <div className="flex h-screen flex-col items-center justify-center bg-gray-950 text-gray-400 gap-3">
         <p className="text-sm">{tCommon("error")}</p>
@@ -146,18 +186,15 @@ export default function EmulatorViewer({ emulatorId }: EmulatorViewerProps) {
     );
   }
 
-  const emulator = data.data.emulator;
-  const isRunning = emulator.status === "running";
-  const streamUrl = emulator.websocketUrl
-    ? emulator.websocketUrl.replace(/^ws(s?):\/\//, "http$1://")
-    : null;
-
   const expiresAtFormatted = new Intl.DateTimeFormat(
     locale === "th" ? "th-TH" : "en-GB",
     { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Bangkok" },
   ).format(new Date(emulator.expiresAt));
 
   const isExpiringSoon = minutesLeft !== null && minutesLeft <= 10;
+
+  // Header stream indicator: show stream status when running, socket status otherwise
+  const streamLive = isRunning ? isStreamReady : false;
 
   return (
     <div className="flex flex-col h-screen bg-gray-950 overflow-hidden">
@@ -192,19 +229,23 @@ export default function EmulatorViewer({ emulatorId }: EmulatorViewerProps) {
           </div>
         </div>
 
-        {/* Right: timer + WS indicator + terminate */}
+        {/* Right: timer + stream indicator + terminate */}
         <div className="flex items-center gap-3 shrink-0">
           {!isExpiringSoon && (
             <span className="text-gray-400 text-xs hidden sm:block">
               {formatCountdown(emulator.expiresAt)}
             </span>
           )}
+
+          {/* Stream / Socket connectivity indicator */}
           <span
-            className={`flex items-center gap-1 text-xs ${isConnected ? "text-green-400" : "text-gray-500"}`}
-            title={isConnected ? t("connected") : t("disconnected")}
+            className={`flex items-center gap-1 text-xs ${streamLive ? "text-green-400" : isSocketConnected ? "text-blue-400" : "text-gray-500"}`}
+            title={streamLive ? t("connected") : isSocketConnected ? "Connected" : t("disconnected")}
           >
-            <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? "bg-green-400" : "bg-gray-500"}`} />
-            <span className="hidden sm:block">{isConnected ? "Live" : "Offline"}</span>
+            <span className={`w-1.5 h-1.5 rounded-full ${streamLive ? "bg-green-400" : isSocketConnected ? "bg-blue-400" : "bg-gray-500"}`} />
+            <span className="hidden sm:block">
+              {streamLive ? "Live" : isSocketConnected ? "Ready" : "Offline"}
+            </span>
           </span>
 
           {emulator.status !== "terminated" && emulator.status !== "expired" && (
@@ -242,17 +283,43 @@ export default function EmulatorViewer({ emulatorId }: EmulatorViewerProps) {
         </div>
       )}
 
-      {/* ── Stream area — fills remaining height ─────────────────────────────── */}
+      {/* ── Stream area ──────────────────────────────────────────────────────── */}
       <main className="flex-1 min-h-0 bg-gray-950 flex items-center justify-center overflow-hidden">
-        {isRunning && streamUrl ? (
-          <iframe
-            src={streamUrl}
-            title="Android Emulator Stream"
-            className="w-full h-full border-0"
-            sandbox="allow-scripts allow-same-origin allow-forms"
-            allow="fullscreen"
-          />
+        {isRunning && wsUrl ? (
+          <div className="relative w-full h-full flex items-center justify-center bg-black">
+            {/* Canvas — always mounted while running, hidden until first frame */}
+            <ScrcpyCanvas
+              key={streamKey}
+              websocketUrl={wsUrl}
+              className={`h-full w-auto max-w-full transition-opacity duration-500 ${isStreamReady ? "opacity-100" : "opacity-0"}`}
+              onConnected={handleStreamConnected}
+              onDisconnected={handleStreamDisconnected}
+              onFirstFrame={handleFirstFrame}
+            />
+
+            {/* Loading overlay — WS not yet connected or waiting for first frame */}
+            {!isStreamReady && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-black">
+                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                <p className="text-sm text-gray-400">
+                  {isStreamConnected ? t("stream_buffering") : t("stream_connecting")}
+                </p>
+              </div>
+            )}
+
+            {/* Paused overlay — stream disconnected after being live (tab switched away) */}
+            {isStreamReady && !isStreamConnected && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/85">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-12 h-12 text-gray-500">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                </svg>
+                <p className="text-sm font-medium text-gray-300">{t("stream_paused")}</p>
+                <p className="text-xs text-gray-500">{t("stream_paused_hint")}</p>
+              </div>
+            )}
+          </div>
         ) : (
+          /* Not running — placeholder */
           <div className="flex flex-col items-center justify-center gap-4 text-gray-600">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={0.75} stroke="currentColor" className="w-24 h-24 opacity-30">
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 15.75h3" />

@@ -132,7 +132,14 @@
       "Bash(node *)",
       "Bash(rm *)",
       "Bash(rm -f /home/nb/emulfast/EmulFast-EmulatorRental/apps/api/tsconfig.tsbuildinfo)",
-      "Bash(/home/nb/emulfast/EmulFast-EmulatorRental/apps/api/node_modules/.bin/nest build *)"
+      "Bash(/home/nb/emulfast/EmulFast-EmulatorRental/apps/api/node_modules/.bin/nest build *)",
+      "Bash(Select-String -Pattern \"Operating System|OSType|Context\")",
+      "Bash(echo \"Watching PID: $!\")",
+      "Bash(cmd.exe *)",
+      "Bash(fuser -k 5000/tcp)",
+      "Bash(stripe trigger *)",
+      "Bash(docker pull *)",
+      "Bash(docker search *)"
     ],
     "deny": [
       "Bash(rm -rf:*)",

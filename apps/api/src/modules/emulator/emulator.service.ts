@@ -217,6 +217,7 @@ export class EmulatorService {
           {
             userId,
             packageCode: order.package.code,
+            androidVersion: order.package.androidVersion,
             expiresAt: expiresAt.toISOString(),
           },
           { headers: this.orchestratorHeaders() },

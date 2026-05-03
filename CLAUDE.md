@@ -78,7 +78,10 @@ NEXT_PUBLIC_API_URL=...
 NEXT_PUBLIC_WS_URL=...
 
 # apps/orchestrator
+# Linux (production / GCP):
 DOCKER_HOST=unix:///var/run/docker.sock
+# Windows (dev — Docker Desktop):
+# DOCKER_HOST=npipe:////./pipe/docker_engine
 REDROID_NETWORK=emulfast-redroid
 ADB_PORT_RANGE=5555-5655
 ```

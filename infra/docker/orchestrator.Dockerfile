@@ -20,7 +20,9 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY apps/orchestrator/package.json ./apps/orchestrator/
 COPY packages/shared/package.json ./packages/shared/
 
-RUN pnpm install --frozen-lockfile --filter orchestrator... --prod=false
+RUN echo "node-linker=hoisted" > .npmrc \
+  && pnpm install --frozen-lockfile --filter orchestrator... --prod=false \
+  && mkdir -p apps/orchestrator/node_modules packages/shared/node_modules
 
 # ============================================================
 # Stage 3: builder — build orchestrator
@@ -28,15 +30,13 @@ RUN pnpm install --frozen-lockfile --filter orchestrator... --prod=false
 FROM base AS builder
 
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/apps/orchestrator/node_modules ./apps/orchestrator/node_modules
-COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
 
 COPY tsconfig.base.json ./
 COPY apps/orchestrator ./apps/orchestrator/
 COPY packages/shared ./packages/shared/
 
-RUN pnpm --filter shared build
-RUN pnpm --filter orchestrator build
+RUN node node_modules/.bin/tsc -p packages/shared/tsconfig.json
+RUN cd apps/orchestrator && node ../../node_modules/@nestjs/cli/bin/nest.js build
 
 # ============================================================
 # Stage 4: runner — production image

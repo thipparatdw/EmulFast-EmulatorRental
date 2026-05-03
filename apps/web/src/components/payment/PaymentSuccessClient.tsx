@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
 import { useTranslations, useLocale } from "next-intl";
@@ -36,12 +36,12 @@ export default function PaymentSuccessClient() {
   const [orderId, setOrderId] = useState<string | null>(directOrderId);
   const [orderType, setOrderType] = useState<"emulator" | "topup" | null>(null);
   const [pollCount, setPollCount] = useState(0);
+  const resolveAttemptsRef = useRef(0);
 
   // ─── ดึง orderId จาก session_id (Stripe redirect) ─────────────────────
 
   const resolveOrderId = useCallback(async () => {
     if (directOrderId) {
-      // Fcoin payment — orderId มาตรง
       setOrderId(directOrderId);
       return;
     }
@@ -51,8 +51,12 @@ export default function PaymentSuccessClient() {
       return;
     }
 
-    // Stripe redirect — หา orderId จาก session_id โดย poll orders แล้ว filter
-    // (simple approach: ดึง orders list แล้วหา order ที่มี stripeSessionId ตรงกัน)
+    resolveAttemptsRef.current += 1;
+    if (resolveAttemptsRef.current > 20) {
+      setStatus("failed");
+      return;
+    }
+
     try {
       const result = await apiFetch<ApiResponse<{ orders: Array<{ id: string; stripeSessionId: string | null; type: string }> }>>("/orders");
       const orders = result.data?.orders ?? [];
@@ -61,8 +65,7 @@ export default function PaymentSuccessClient() {
         setOrderId(matched.id);
         setOrderType(matched.type === "wallet_topup" ? "topup" : "emulator");
       } else {
-        // ยังหาไม่เจอ — อาจ webhook ยังไม่มา ลอง poll ใหม่
-        setTimeout(resolveOrderId, 2000);
+        setTimeout(() => void resolveOrderId(), 2000);
       }
     } catch {
       setStatus("failed");
@@ -70,6 +73,7 @@ export default function PaymentSuccessClient() {
   }, [sessionId, directOrderId]);
 
   useEffect(() => {
+    resolveAttemptsRef.current = 0;
     void resolveOrderId();
   }, [resolveOrderId]);
 
