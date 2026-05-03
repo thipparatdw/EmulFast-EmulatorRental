@@ -33,6 +33,11 @@ interface OrchestratorCreateResponse {
   websocketPath: string;
 }
 
+interface OrchestratorContainerInfo {
+  id: string;
+  state: string;
+}
+
 // ─── Package sub-type (Prisma include shape) ─────────────────────────────────
 
 interface EmulatorWithPackage extends Emulator {
@@ -255,6 +260,9 @@ export class EmulatorService {
       `Emulator created: id=${created.id} container=${orchestratorData.containerId} user=${userId}`,
     );
 
+    // Schedule mark-running after Android boot (~35s for zygote + ADB connect)
+    this.scheduleMarkRunning(created.id, orchestratorData.containerId, 40_000);
+
     // Re-fetch พร้อม package เพื่อให้ mapToResponse ได้ข้อมูลครบ
     const emulatorWithPkg = await this.prisma.emulator.findUniqueOrThrow({
       where: { id: created.id },
@@ -262,6 +270,96 @@ export class EmulatorService {
     });
 
     return this.mapToResponse(emulatorWithPkg);
+  }
+
+  // ─── Mark provisioning emulator as running once container is up ────────────
+
+  private scheduleMarkRunning(emulatorId: string, containerId: string, delayMs: number): void {
+    setTimeout(() => {
+      void this.checkAndMarkRunning(emulatorId, containerId);
+    }, delayMs);
+  }
+
+  async checkAndMarkRunning(emulatorId: string, containerId: string): Promise<void> {
+    let containerState: string | null = null;
+    try {
+      const res = await firstValueFrom(
+        this.httpService.get<OrchestratorContainerInfo>(
+          `${this.orchestratorUrl}/containers/${containerId}`,
+          { headers: this.orchestratorHeaders() },
+        ),
+      );
+      containerState = res.data.state;
+    } catch (err) {
+      const status = (err as AxiosError).response?.status;
+      if (status === 404) {
+        // Container gone — mark failed
+        await this.markEmulatorFailed(emulatorId);
+      }
+      return;
+    }
+
+    if (containerState !== "running") {
+      // Not ready yet — retry in 10s
+      this.scheduleMarkRunning(emulatorId, containerId, 10_000);
+      return;
+    }
+
+    const emulator = await this.prisma.emulator.findFirst({
+      where: { id: emulatorId, status: "provisioning", deletedAt: null },
+    });
+    if (!emulator) return;
+
+    const updated = await this.prisma.emulator.update({
+      where: { id: emulatorId },
+      data: { status: "running", startedAt: new Date() },
+    });
+
+    this.gateway.emitStatusUpdate(emulator.userId, emulatorId, "running", updated.expiresAt);
+    this.logger.log(`Emulator marked running: id=${emulatorId}`);
+  }
+
+  private async markEmulatorFailed(emulatorId: string): Promise<void> {
+    const emulator = await this.prisma.emulator.findFirst({
+      where: { id: emulatorId, status: "provisioning", deletedAt: null },
+    });
+    if (!emulator) return;
+
+    const updated = await this.prisma.emulator.update({
+      where: { id: emulatorId },
+      data: { status: "failed", stoppedAt: new Date() },
+    });
+
+    this.gateway.emitStatusUpdate(emulator.userId, emulatorId, "failed", updated.expiresAt);
+    this.logger.warn(`Emulator marked failed (container gone): id=${emulatorId}`);
+  }
+
+  // ─── Terminate running emulators whose containers no longer exist ──────────
+
+  async terminateOrphanedEmulators(): Promise<void> {
+    const running = await this.prisma.emulator.findMany({
+      where: { status: "running", deletedAt: null, containerId: { not: null } },
+    });
+
+    for (const emulator of running) {
+      try {
+        await firstValueFrom(
+          this.httpService.get<OrchestratorContainerInfo>(
+            `${this.orchestratorUrl}/containers/${emulator.containerId!}`,
+            { headers: this.orchestratorHeaders() },
+          ),
+        );
+      } catch (err) {
+        if ((err as AxiosError).response?.status === 404) {
+          await this.prisma.emulator.update({
+            where: { id: emulator.id },
+            data: { status: "terminated", stoppedAt: new Date() },
+          });
+          this.gateway.emitStatusUpdate(emulator.userId, emulator.id, "stopped", emulator.expiresAt);
+          this.logger.warn(`Emulator terminated (orphaned container): id=${emulator.id}`);
+        }
+      }
+    }
   }
 
   // ─── Delete ────────────────────────────────────────────────────────────────
@@ -576,6 +674,25 @@ export class EmulatorService {
   }
 
   // ─── Expiry scan (used by processor) ──────────────────────────────────────
+
+  // ─── Recovery: re-schedule mark-running for emulators stuck in provisioning ─
+
+  async recoverProvisioningEmulators(): Promise<void> {
+    const stale = await this.prisma.emulator.findMany({
+      where: {
+        status: "provisioning",
+        deletedAt: null,
+        // Only those created more than 30s ago (boot should be done)
+        createdAt: { lt: new Date(Date.now() - 30_000) },
+      },
+    });
+
+    for (const emulator of stale) {
+      if (emulator.containerId) {
+        void this.checkAndMarkRunning(emulator.id, emulator.containerId);
+      }
+    }
+  }
 
   async processExpiredEmulators(): Promise<void> {
     const expiredEmulators = await this.prisma.emulator.findMany({

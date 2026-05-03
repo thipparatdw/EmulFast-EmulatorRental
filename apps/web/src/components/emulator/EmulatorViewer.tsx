@@ -4,103 +4,58 @@ import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Route } from "next";
 import { useTranslations, useLocale } from "next-intl";
+import Link from "next/link";
 import useSWR from "swr";
 import { useEmulatorSocket } from "@/hooks/useEmulatorSocket";
 import { apiFetch, ApiError } from "@/lib/api-client";
 import type { EmulatorResponse, EmulatorStatus } from "@emulfast/shared";
 import type { ApiResponse } from "@emulfast/shared";
 
-// ─── Props ────────────────────────────────────────────────────────────────────
-
 interface EmulatorViewerProps {
   emulatorId: string;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function StatusBadge({
-  status,
-  label,
-}: {
-  status: EmulatorStatus;
-  label: string;
-}) {
+function StatusDot({ status }: { status: EmulatorStatus }) {
   const colorMap: Record<EmulatorStatus, string> = {
-    running: "bg-green-100 text-green-800 border-green-200",
-    provisioning: "bg-yellow-100 text-yellow-800 border-yellow-200",
-    stopping: "bg-orange-100 text-orange-800 border-orange-200",
-    stopped: "bg-gray-100 text-gray-700 border-gray-200",
-    expired: "bg-red-100 text-red-700 border-red-200",
-    terminated: "bg-gray-100 text-gray-500 border-gray-200",
-    failed: "bg-red-100 text-red-800 border-red-200",
+    running: "bg-green-400",
+    provisioning: "bg-yellow-400 animate-pulse",
+    stopping: "bg-orange-400",
+    stopped: "bg-gray-400",
+    expired: "bg-red-400",
+    terminated: "bg-gray-500",
+    failed: "bg-red-500",
   };
-
-  return (
-    <span
-      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${colorMap[status]}`}
-      aria-label={`Status: ${label}`}
-    >
-      {status === "running" && (
-        <span
-          className="mr-1.5 h-2 w-2 rounded-full bg-green-500 animate-pulse"
-          aria-hidden="true"
-        />
-      )}
-      {label}
-    </span>
-  );
+  return <span className={`inline-block w-2 h-2 rounded-full ${colorMap[status]}`} />;
 }
 
-function LoadingSkeleton() {
-  return (
-    <div className="animate-pulse space-y-4" aria-busy="true" aria-label="Loading">
-      <div className="flex items-center justify-between">
-        <div className="h-6 w-32 rounded bg-gray-200" />
-        <div className="h-6 w-20 rounded-full bg-gray-200" />
-      </div>
-      <div className="h-[480px] rounded-xl bg-gray-200" />
-      <div className="h-4 w-48 rounded bg-gray-200" />
-      <div className="h-10 w-36 rounded bg-gray-200" />
-    </div>
-  );
+function formatCountdown(expiresAt: string): string {
+  const diff = new Date(expiresAt).getTime() - Date.now();
+  if (diff <= 0) return "expired";
+  const days = Math.floor(diff / 86_400_000);
+  const hours = Math.floor((diff % 86_400_000) / 3_600_000);
+  const mins = Math.floor((diff % 3_600_000) / 60_000);
+  if (days > 0) return `${days}d ${hours}h`;
+  if (hours > 0) return `${hours}h ${mins}m`;
+  return `${mins}m`;
 }
 
 function ConfirmDialog({
-  message,
-  onConfirm,
-  onCancel,
-  confirmLabel,
-  cancelLabel,
+  message, onConfirm, onCancel, confirmLabel, cancelLabel,
 }: {
-  message: string;
-  onConfirm: () => void;
-  onCancel: () => void;
-  confirmLabel: string;
-  cancelLabel: string;
+  message: string; onConfirm: () => void; onCancel: () => void;
+  confirmLabel: string; cancelLabel: string;
 }) {
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={confirmLabel}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-    >
-      <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl">
-        <p className="mb-6 text-sm text-gray-700">{message}</p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="w-full max-w-sm rounded-xl bg-gray-800 border border-gray-700 p-6 shadow-2xl">
+        <p className="mb-6 text-sm text-gray-200">{message}</p>
         <div className="flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
-          >
+          <button type="button" onClick={onCancel}
+            className="rounded-lg border border-gray-600 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-gray-700">
             {cancelLabel}
           </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
-            aria-label={confirmLabel}
-          >
+          <button type="button" onClick={onConfirm}
+            className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700">
             {confirmLabel}
           </button>
         </div>
@@ -108,8 +63,6 @@ function ConfirmDialog({
     </div>
   );
 }
-
-// ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function EmulatorViewer({ emulatorId }: EmulatorViewerProps) {
   const t = useTranslations("emulator.viewer");
@@ -121,17 +74,9 @@ export default function EmulatorViewer({ emulatorId }: EmulatorViewerProps) {
   const [isTerminating, setIsTerminating] = useState(false);
   const [terminateError, setTerminateError] = useState<string | null>(null);
 
-  // ─── SWR fetch emulator detail ─────────────────────────────────────────────
-
-  const {
-    data,
-    error,
-    isLoading,
-    mutate,
-  } = useSWR<ApiResponse<{ emulator: EmulatorResponse }>>(
-    `/api/emulators/${emulatorId}`,
-    (path: string) =>
-      apiFetch<ApiResponse<{ emulator: EmulatorResponse }>>(path),
+  const { data, error, isLoading, mutate } = useSWR<ApiResponse<{ emulator: EmulatorResponse }>>(
+    `/emulators/${emulatorId}`,
+    (path: string) => apiFetch<ApiResponse<{ emulator: EmulatorResponse }>>(path),
     {
       refreshInterval: 10_000,
       onError: (err: unknown) => {
@@ -142,23 +87,12 @@ export default function EmulatorViewer({ emulatorId }: EmulatorViewerProps) {
     },
   );
 
-  // ─── Socket.IO — รับ status update real-time ────────────────────────────────
-
   const handleStatusChange = useCallback(
     (newStatus: EmulatorStatus, expiresAt: string) => {
       mutate(
         (prev) => {
           if (!prev) return prev;
-          return {
-            ...prev,
-            data: {
-              emulator: {
-                ...prev.data.emulator,
-                status: newStatus,
-                expiresAt,
-              },
-            },
-          };
+          return { ...prev, data: { emulator: { ...prev.data.emulator, status: newStatus, expiresAt } } };
         },
         { revalidate: false },
       );
@@ -166,67 +100,48 @@ export default function EmulatorViewer({ emulatorId }: EmulatorViewerProps) {
     [mutate],
   );
 
-  const { minutesLeft, isConnected } = useEmulatorSocket(
-    emulatorId,
-    handleStatusChange,
-  );
-
-  // ─── Terminate ─────────────────────────────────────────────────────────────
+  const { minutesLeft, isConnected } = useEmulatorSocket(emulatorId, handleStatusChange);
 
   const handleTerminate = async () => {
     setIsTerminating(true);
     setTerminateError(null);
     try {
-      await apiFetch(`/api/emulators/${emulatorId}`, { method: "DELETE" });
+      await apiFetch(`/emulators/${emulatorId}`, { method: "DELETE" });
       setShowConfirm(false);
       router.push(`/${locale}/dashboard` as Route);
     } catch (err) {
-      const msg =
-        err instanceof ApiError ? err.message : tCommon("error");
-      setTerminateError(msg);
+      setTerminateError(err instanceof ApiError ? err.message : tCommon("error"));
       setIsTerminating(false);
       setShowConfirm(false);
     }
   };
 
-  // ─── Render states ─────────────────────────────────────────────────────────
+  // ─── Loading ───────────────────────────────────────────────────────────────
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-8">
-        <LoadingSkeleton />
+      <div className="flex h-screen items-center justify-center bg-gray-950">
+        <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (error instanceof ApiError && error.status === 404) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-        <h2 className="mb-2 text-xl font-semibold text-gray-900">
-          {t("not_found")}
-        </h2>
-        <p className="mb-6 text-sm text-gray-500">{t("not_found_desc")}</p>
-        <a
-          href={`/${locale}/dashboard`}
-          className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          {t("back_to_list")}
-        </a>
+      <div className="flex h-screen flex-col items-center justify-center bg-gray-950 text-gray-300 gap-4">
+        <p className="text-lg font-semibold">{t("not_found")}</p>
+        <Link href={`/${locale}/dashboard` as Route}
+          className="text-sm text-blue-400 hover:underline">{t("back_to_list")}</Link>
       </div>
     );
   }
 
   if (error || !data) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-        <p className="text-sm text-red-600">{tCommon("error")}</p>
-        <button
-          type="button"
-          onClick={() => mutate()}
-          className="mt-4 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-400"
-        >
-          {tCommon("retry")}
-        </button>
+      <div className="flex h-screen flex-col items-center justify-center bg-gray-950 text-gray-400 gap-3">
+        <p className="text-sm">{tCommon("error")}</p>
+        <button onClick={() => mutate()}
+          className="text-sm text-blue-400 hover:underline">{tCommon("retry")}</button>
       </div>
     );
   }
@@ -239,16 +154,14 @@ export default function EmulatorViewer({ emulatorId }: EmulatorViewerProps) {
 
   const expiresAtFormatted = new Intl.DateTimeFormat(
     locale === "th" ? "th-TH" : "en-GB",
-    {
-      dateStyle: "medium",
-      timeStyle: "short",
-      timeZone: "Asia/Bangkok",
-    },
+    { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Bangkok" },
   ).format(new Date(emulator.expiresAt));
 
+  const isExpiringSoon = minutesLeft !== null && minutesLeft <= 10;
+
   return (
-    <>
-      {/* Terminate confirm dialog */}
+    <div className="flex flex-col h-screen bg-gray-950 overflow-hidden">
+      {/* ── Confirm dialog ─────────────────────────────────────────────────── */}
       {showConfirm && (
         <ConfirmDialog
           message={t("terminate_confirm")}
@@ -259,147 +172,102 @@ export default function EmulatorViewer({ emulatorId }: EmulatorViewerProps) {
         />
       )}
 
-      <div className="mx-auto max-w-2xl px-4 py-8">
-        {/* Header */}
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <h1 className="text-xl font-bold text-gray-900">
-              {tCommon("appName")}
-            </h1>
-            <span className="text-sm text-gray-500" aria-label={t("package_label")}>
-              {emulator.packageCode}
-            </span>
-            <StatusBadge
-              status={emulator.status}
-              label={t(`status.${emulator.status}`)}
-            />
-          </div>
-
-          {/* Connection indicator */}
-          <span
-            className={`flex items-center gap-1.5 text-xs ${
-              isConnected ? "text-green-600" : "text-gray-400"
-            }`}
-            aria-label={isConnected ? t("connected") : t("disconnected")}
-          >
-            <span
-              className={`h-2 w-2 rounded-full ${
-                isConnected ? "bg-green-500" : "bg-gray-300"
-              }`}
-              aria-hidden="true"
-            />
-            {isConnected ? t("connected") : t("disconnected")}
-          </span>
-        </div>
-
-        {/* Expiring soon warning */}
-        {minutesLeft !== null && minutesLeft <= 10 && (
-          <div
-            role="alert"
-            className="mb-4 flex items-center gap-2 rounded-lg border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-              className="h-5 w-5 shrink-0"
-              aria-hidden="true"
-            >
-              <path
-                fillRule="evenodd"
-                d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
-                clipRule="evenodd"
-              />
+      {/* ── Header bar ─────────────────────────────────────────────────────── */}
+      <header className="flex items-center justify-between px-4 h-12 bg-gray-900 border-b border-gray-800 shrink-0 gap-4">
+        {/* Left: back + info */}
+        <div className="flex items-center gap-3 min-w-0">
+          <Link href={`/${locale}/dashboard` as Route}
+            className="text-gray-400 hover:text-gray-200 shrink-0"
+            aria-label="back to dashboard">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
+              <path fillRule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 3.96a.75.75 0 11-1.04 1.08l-5.5-5.25a.75.75 0 010-1.08l5.5-5.25a.75.75 0 111.04 1.08L5.612 9.25H16.25A.75.75 0 0117 10z" clipRule="evenodd" />
             </svg>
-            {t("expiring_soon", { minutes: minutesLeft })}
+          </Link>
+          <div className="flex items-center gap-2 min-w-0">
+            <StatusDot status={emulator.status} />
+            <span className="text-white font-semibold text-sm truncate">{emulator.packageCode}</span>
+            <span className="text-gray-500 text-xs hidden sm:block">
+              Android {emulator.package.androidVersion} &bull; {emulator.package.cpuCores}C / {emulator.package.ramMb}MB
+            </span>
           </div>
-        )}
+        </div>
 
-        {/* Stream area */}
-        <div className="mb-4 overflow-hidden rounded-xl border border-gray-200 bg-gray-900">
-          {isRunning && streamUrl ? (
-            <iframe
-              src={streamUrl}
-              title="Android Emulator Stream"
-              className="h-[480px] w-full border-0"
-              aria-label="Android Emulator Stream"
-              sandbox="allow-scripts allow-same-origin allow-forms"
-            />
-          ) : (
-            <div className="flex h-[480px] flex-col items-center justify-center gap-3 text-gray-400">
-              {/* Phone icon */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1}
-                stroke="currentColor"
-                className="h-16 w-16 opacity-30"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 15.75h3"
-                />
-              </svg>
-              <p className="text-sm">
-                {isRunning
-                  ? t("stream_placeholder")
-                  : t("stream_not_available")}
-              </p>
-              <StatusBadge
-                status={emulator.status}
-                label={t(`status.${emulator.status}`)}
-              />
-            </div>
+        {/* Right: timer + WS indicator + terminate */}
+        <div className="flex items-center gap-3 shrink-0">
+          {!isExpiringSoon && (
+            <span className="text-gray-400 text-xs hidden sm:block">
+              {formatCountdown(emulator.expiresAt)}
+            </span>
           )}
-        </div>
-
-        {/* Footer info */}
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-2 text-sm text-gray-500">
-          <span aria-label={t("expires_at", { date: expiresAtFormatted })}>
-            {t("expires_at", { date: expiresAtFormatted })}
-          </span>
-        </div>
-
-        {/* Terminate error */}
-        {terminateError && (
-          <div
-            role="alert"
-            className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+          <span
+            className={`flex items-center gap-1 text-xs ${isConnected ? "text-green-400" : "text-gray-500"}`}
+            title={isConnected ? t("connected") : t("disconnected")}
           >
-            {terminateError}
-          </div>
-        )}
+            <span className={`w-1.5 h-1.5 rounded-full ${isConnected ? "bg-green-400" : "bg-gray-500"}`} />
+            <span className="hidden sm:block">{isConnected ? "Live" : "Offline"}</span>
+          </span>
 
-        {/* Terminate button — แสดงเฉพาะ status ที่ยังไม่ถูก terminate/expired */}
-        {emulator.status !== "terminated" &&
-          emulator.status !== "expired" && (
+          {emulator.status !== "terminated" && emulator.status !== "expired" && (
             <button
               type="button"
               onClick={() => setShowConfirm(true)}
               disabled={isTerminating}
-              className="inline-flex items-center gap-2 rounded-lg border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-400 disabled:cursor-not-allowed disabled:opacity-50"
-              aria-label={t("terminate")}
+              className="flex items-center gap-1.5 border border-red-800 text-red-400 hover:bg-red-900/30 px-3 py-1 rounded-lg text-xs font-medium transition-colors disabled:opacity-50"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                className="h-4 w-4"
-                aria-hidden="true"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M8.75 1A2.75 2.75 0 006 3.75v.443c-.795.077-1.584.176-2.365.298a.75.75 0 10.23 1.482l.149-.022.841 10.518A2.75 2.75 0 007.596 19h4.807a2.75 2.75 0 002.742-2.53l.841-10.52.149.023a.75.75 0 00.23-1.482A41.03 41.03 0 0014 4.193V3.75A2.75 2.75 0 0011.25 1h-2.5zM10 4c.84 0 1.673.025 2.5.075V3.75c0-.69-.56-1.25-1.25-1.25h-2.5c-.69 0-1.25.56-1.25 1.25v.325C8.327 4.025 9.16 4 10 4zM8.58 7.72a.75.75 0 00-1.5.06l.3 7.5a.75.75 0 101.5-.06l-.3-7.5zm4.34.06a.75.75 0 10-1.5-.06l-.3 7.5a.75.75 0 101.5.06l.3-7.5z"
-                  clipRule="evenodd"
-                />
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5">
+                <path d="M5.28 4.22a.75.75 0 0 0-1.06 1.06L6.94 8l-2.72 2.72a.75.75 0 1 0 1.06 1.06L8 9.06l2.72 2.72a.75.75 0 1 0 1.06-1.06L9.06 8l2.72-2.72a.75.75 0 0 0-1.06-1.06L8 6.94 5.28 4.22Z" />
               </svg>
-              {isTerminating ? tCommon("loading") : t("terminate")}
+              {isTerminating ? "..." : t("terminate")}
             </button>
           )}
-      </div>
-    </>
+        </div>
+      </header>
+
+      {/* ── Expiring soon warning ────────────────────────────────────────────── */}
+      {isExpiringSoon && (
+        <div className="flex items-center gap-2 px-4 py-2 bg-yellow-900/40 border-b border-yellow-800/50 text-yellow-300 text-xs shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 shrink-0">
+            <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+          </svg>
+          {t("expiring_soon", { minutes: minutesLeft })}
+          &nbsp;&bull;&nbsp;
+          <span className="font-medium">{expiresAtFormatted}</span>
+        </div>
+      )}
+
+      {/* ── Error banner ─────────────────────────────────────────────────────── */}
+      {terminateError && (
+        <div className="px-4 py-2 bg-red-900/40 border-b border-red-800/50 text-red-300 text-xs shrink-0">
+          {terminateError}
+        </div>
+      )}
+
+      {/* ── Stream area — fills remaining height ─────────────────────────────── */}
+      <main className="flex-1 min-h-0 bg-gray-950 flex items-center justify-center overflow-hidden">
+        {isRunning && streamUrl ? (
+          <iframe
+            src={streamUrl}
+            title="Android Emulator Stream"
+            className="w-full h-full border-0"
+            sandbox="allow-scripts allow-same-origin allow-forms"
+            allow="fullscreen"
+          />
+        ) : (
+          <div className="flex flex-col items-center justify-center gap-4 text-gray-600">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={0.75} stroke="currentColor" className="w-24 h-24 opacity-30">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 15.75h3" />
+            </svg>
+            <p className="text-sm text-gray-500">
+              {emulator.status === "provisioning"
+                ? t("stream_placeholder")
+                : t("stream_not_available")}
+            </p>
+            {emulator.status === "provisioning" && (
+              <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            )}
+          </div>
+        )}
+      </main>
+    </div>
   );
 }

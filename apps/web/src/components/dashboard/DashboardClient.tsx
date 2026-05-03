@@ -50,71 +50,113 @@ function EmulatorCard({ emulator, onRenew, renewingId }: EmulatorCardProps) {
   const locale = useLocale();
   const [, setTick] = useState(0);
 
-  // Force re-render every 30s for countdown
   useEffect(() => {
     if (emulator.status !== "running" && emulator.status !== "provisioning") return;
     const interval = setInterval(() => setTick((n) => n + 1), 30_000);
     return () => clearInterval(interval);
   }, [emulator.status]);
 
-  const isExpired = emulator.status === "expired" || emulator.status === "terminated";
   const isActive = emulator.status === "running";
+  const isProvisioning = emulator.status === "provisioning";
   const isRenewing = renewingId === emulator.id;
 
+  const streamSrc = emulator.websocketUrl
+    ? emulator.websocketUrl.replace(/^ws(s?):\/\//, "http$1://")
+    : null;
+
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
-      <div className="flex items-start justify-between mb-3">
-        <div>
-          <p className="font-semibold text-gray-900 text-base">
-            {emulator.package.nameKey}
-          </p>
-          <p className="text-xs text-gray-500 mt-0.5">
-            {t("android_version", { version: emulator.package.androidVersion })}
-            &nbsp;&bull;&nbsp;
-            {emulator.package.cpuCores} cores&nbsp;&bull;&nbsp;
-            {emulator.package.ramMb} MB RAM
-          </p>
-        </div>
-        <span
-          className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_COLORS[emulator.status]}`}
-        >
-          {emulator.status === "running" && (
-            <span className="mr-1.5 h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-          )}
-          {t(`status.${emulator.status}`)}
-        </span>
-      </div>
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col">
+      {/* ── Preview Screen Area ── */}
+      <div className="relative bg-gray-900 overflow-hidden" style={{ aspectRatio: "9/16", maxHeight: "280px" }}>
+        {isActive && streamSrc ? (
+          <>
+            {/* Scaled iframe preview — pointer-events:none so clicks reach the Link overlay */}
+            <iframe
+              src={streamSrc}
+              title="preview"
+              className="absolute inset-0 border-0"
+              style={{
+                width: "400%",
+                height: "400%",
+                transform: "scale(0.25)",
+                transformOrigin: "top left",
+                pointerEvents: "none",
+              }}
+              sandbox="allow-scripts allow-same-origin"
+            />
+            {/* LIVE badge */}
+            <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/60 text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+              LIVE
+            </div>
+          </>
+        ) : isProvisioning ? (
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-gray-400">
+            <div className="w-8 h-8 border-3 border-blue-400 border-t-transparent rounded-full animate-spin" />
+            <p className="text-xs text-blue-300">{t("status.provisioning")}</p>
+          </div>
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1} stroke="currentColor" className="w-16 h-16 text-gray-600 opacity-40">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 15.75h3" />
+            </svg>
+          </div>
+        )}
 
-      {/* Expiry */}
-      {!isExpired && (
-        <p className="text-sm text-gray-500 mb-4">
-          {emulator.status === "expired"
-            ? t("expired_at", {
-                date: new Date(emulator.expiresAt).toLocaleDateString(),
-              })
-            : t("expires_in", { time: formatCountdown(emulator.expiresAt) })}
-        </p>
-      )}
-
-      {/* Actions */}
-      <div className="flex gap-2">
+        {/* Clickable overlay — navigate to viewer on click */}
         {isActive && (
           <Link
             href={`/${locale}/emulators/${emulator.id}` as Route}
-            className="flex-1 text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-xl text-sm transition-colors"
+            className="absolute inset-0 z-10 flex items-end justify-center pb-3 opacity-0 hover:opacity-100 transition-opacity bg-black/20"
+            aria-label={t("view")}
           >
-            {t("view")}
+            <span className="bg-white text-gray-900 font-semibold text-xs px-4 py-1.5 rounded-full shadow">
+              {t("view")} →
+            </span>
           </Link>
         )}
-        {!isExpired && (
+      </div>
+
+      {/* ── Info + Actions ── */}
+      <div className="p-4 flex flex-col gap-3 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <p className="font-semibold text-gray-900 text-sm leading-tight">
+              {emulator.package.nameKey}
+            </p>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Android {emulator.package.androidVersion} &bull; {emulator.package.cpuCores}C / {emulator.package.ramMb}MB
+            </p>
+          </div>
+          <span className={`shrink-0 inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[emulator.status]}`}>
+            {emulator.status === "running" && (
+              <span className="mr-1 h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+            )}
+            {t(`status.${emulator.status}`)}
+          </span>
+        </div>
+
+        <p className="text-xs text-gray-500">
+          {t("expires_in", { time: formatCountdown(emulator.expiresAt) })}
+        </p>
+
+        <div className="flex gap-2 mt-auto">
+          {isActive && (
+            <Link
+              href={`/${locale}/emulators/${emulator.id}` as Route}
+              className="flex-1 text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-xl text-xs transition-colors"
+            >
+              {t("view")}
+            </Link>
+          )}
           <button
             onClick={() => onRenew(emulator.id)}
             disabled={isRenewing}
-            className={`${isActive ? "" : "flex-1"} border border-gray-300 hover:border-blue-400 text-gray-700 hover:text-blue-600 font-semibold py-2 px-4 rounded-xl text-sm transition-colors disabled:opacity-50`}
+            className={`${isActive ? "" : "flex-1"} border border-gray-300 hover:border-blue-400 text-gray-700 hover:text-blue-600 font-semibold py-2 px-3 rounded-xl text-xs transition-colors disabled:opacity-50`}
           >
             {isRenewing ? "..." : t("renew")}
           </button>
-        )}
+        </div>
       </div>
     </div>
   );
@@ -162,7 +204,10 @@ export default function DashboardClient() {
     { refreshInterval: 30_000 },
   );
 
-  const emulators = data?.data?.emulators ?? [];
+  const allEmulators = data?.data?.emulators ?? [];
+  const emulators = allEmulators.filter(
+    (e) => e.status !== "terminated" && e.status !== "expired" && e.status !== "stopped",
+  );
 
   // ─── WS subscription ────────────────────────────────────────────────────────
 
@@ -184,8 +229,7 @@ export default function DashboardClient() {
         if (event.status === "running") {
           addToast("success", tNotif("emulator_status_running"));
           void mutate();
-        } else if (event.status === "expired") {
-          addToast("warning", tNotif("emulator_status_expired"));
+        } else if (event.status === "expired" || event.status === "terminated") {
           void mutate();
         } else if (event.status === "failed") {
           addToast("error", tNotif("emulator_status_failed"));
@@ -238,7 +282,7 @@ export default function DashboardClient() {
 
   return (
     <>
-      <div className="max-w-4xl mx-auto px-4">
+      <div className="max-w-6xl mx-auto px-4">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">{t("title")}</h1>
@@ -246,19 +290,22 @@ export default function DashboardClient() {
         </div>
 
         {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white rounded-2xl border border-gray-200 p-5 animate-pulse">
-                <div className="h-5 bg-gray-200 rounded w-32 mb-2" />
-                <div className="h-4 bg-gray-200 rounded w-48 mb-4" />
-                <div className="h-9 bg-gray-200 rounded-xl" />
+              <div key={i} className="bg-white rounded-2xl border border-gray-200 overflow-hidden animate-pulse">
+                <div className="bg-gray-200" style={{ aspectRatio: "9/16", maxHeight: "280px" }} />
+                <div className="p-4 space-y-2">
+                  <div className="h-4 bg-gray-200 rounded w-24" />
+                  <div className="h-3 bg-gray-200 rounded w-32" />
+                  <div className="h-8 bg-gray-200 rounded-xl mt-3" />
+                </div>
               </div>
             ))}
           </div>
         ) : emulators.length === 0 ? (
           <EmptyState />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {emulators.map((emulator) => {
               // Apply live status override from WS if available
               const liveStatus = liveStatuses.get(emulator.id);

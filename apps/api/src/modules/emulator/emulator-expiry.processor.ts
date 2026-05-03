@@ -33,6 +33,8 @@ export class EmulatorExpiryProcessor
     this.logger.debug(`Processing job: ${job.name} id=${job.id}`);
 
     try {
+      await this.emulatorService.recoverProvisioningEmulators();
+      await this.emulatorService.terminateOrphanedEmulators();
       await this.emulatorService.processExpiredEmulators();
       await this.emulatorService.warnExpiringEmulators();
     } catch (err) {

@@ -227,7 +227,8 @@
       "title_highlight": "เร็ว ง่าย พร้อมทุกที่",
       "desc": "เช่า Android Emulator คุณภาพสูง ไม่ต้องติดตั้ง ไม่ต้องตั้งค่า เริ่มใช้งานได้ใน 30 วินาที",
       "cta_start": "เริ่มใช้งานฟรี",
-      "cta_packages": "ดูแพ็กเกจ"
+      "cta_packages": "ดูแพ็กเกจ",
+      "cta_my_emulators": "โปรแกรมจำลองของฉัน"
     },
     "features": {
       "title": "ทำไมต้องเลือก EmulFast?",

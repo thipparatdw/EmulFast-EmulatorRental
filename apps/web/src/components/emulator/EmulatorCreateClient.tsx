@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import type { Route } from "next";
 import { useLocale } from "next-intl";
@@ -30,13 +30,13 @@ export default function EmulatorCreateClient() {
   const orderId = searchParams.get("orderId");
 
   const [error, setError] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
+  const hasCreated = useRef(false);
 
   useEffect(() => {
-    if (!orderId || creating) return;
+    if (!orderId || hasCreated.current) return;
+    hasCreated.current = true;
 
     async function createEmulator() {
-      setCreating(true);
       try {
         const result = await apiFetch<ApiResponse<{ emulator: EmulatorResponse }>>(
           "/emulators",
@@ -61,7 +61,7 @@ export default function EmulatorCreateClient() {
     }
 
     void createEmulator();
-  }, [orderId, locale, router, creating]);
+  }, [orderId, locale, router]);
 
   if (error) {
     return (

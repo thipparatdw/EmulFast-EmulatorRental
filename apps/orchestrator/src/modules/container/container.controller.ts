@@ -9,6 +9,7 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 
+
 import { ContainerService } from './container.service';
 
 import type { CreateContainerDto } from './dto/create-container.dto';
@@ -37,5 +38,11 @@ export class ContainerController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteContainer(@Param('id') id: string): Promise<void> {
     await this.containerService.deleteContainer(id);
+  }
+
+  @Post('containers/:id/kill-scrcpy')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async killScrcpy(@Param('id') id: string): Promise<void> {
+    await this.containerService.killScrcpy(id);
   }
 }

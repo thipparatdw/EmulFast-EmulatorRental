@@ -50,6 +50,8 @@ export function useEmulatorSocket(
 
     socket.on("connect", () => {
       setIsConnected(true);
+      // Tell the server this client is actively viewing this emulator
+      socket.emit("viewer.watch", { emulatorId });
     });
 
     socket.on("disconnect", () => {
@@ -74,8 +76,21 @@ export function useEmulatorSocket(
       }
     }, 30_000);
 
+    // Notify server when tab is hidden (user switched away)
+    const handleVisibility = () => {
+      if (!socket.connected) return;
+      if (document.visibilityState === "hidden") {
+        socket.emit("viewer.unwatch", { emulatorId });
+      } else {
+        socket.emit("viewer.watch", { emulatorId });
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
     return () => {
       clearInterval(pingInterval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+      socket.emit("viewer.unwatch", { emulatorId });
       socket.disconnect();
       socketRef.current = null;
     };

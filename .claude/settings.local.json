@@ -129,7 +129,10 @@
       "Bash(kill 41514)",
       "Bash(sed -i 's|REDIS_URL=redis://redis:6379|REDIS_URL=redis://localhost:6379|' /home/nb/emulfast/EmulFast-EmulatorRental/.env)",
       "Bash(sed -i 's|ORCHESTRATOR_URL=http://orchestrator:5000|ORCHESTRATOR_URL=http://localhost:5000|' /home/nb/emulfast/EmulFast-EmulatorRental/.env)",
-      "Bash(node *)"
+      "Bash(node *)",
+      "Bash(rm *)",
+      "Bash(rm -f /home/nb/emulfast/EmulFast-EmulatorRental/apps/api/tsconfig.tsbuildinfo)",
+      "Bash(/home/nb/emulfast/EmulFast-EmulatorRental/apps/api/node_modules/.bin/nest build *)"
     ],
     "deny": [
       "Bash(rm -rf:*)",

@@ -9,11 +9,14 @@ import type { CreateContainerDto } from './dto/create-container.dto';
 interface PackageDockerConfig {
   memory: number;
   nanoCpus: number;
+  cpuShares: number;
 }
 
+// Tuned for 4 vCPU / 16 GB host — supports up to 5 SFAST or 3 MFAST concurrently.
+// cpuShares 512 (< system default 1024) keeps emulators lower-priority than host services.
 const PACKAGE_DOCKER_CONFIG: Record<string, PackageDockerConfig> = {
-  SFAST: { memory: 3 * 1024 * 1024 * 1024, nanoCpus: 3e9 },
-  MFAST: { memory: 4 * 1024 * 1024 * 1024, nanoCpus: 3e9 },
+  SFAST: { memory: 2.5 * 1024 * 1024 * 1024, nanoCpus: 1e9, cpuShares: 512 },
+  MFAST: { memory: 3.0 * 1024 * 1024 * 1024, nanoCpus: 1.5e9, cpuShares: 512 },
 };
 
 const REDROID_IMAGE = 'redroid/redroid:10.0.0-latest';
@@ -178,7 +181,9 @@ export class ContainerService implements OnModuleInit {
         ],
         HostConfig: {
           Memory: config.memory,
+          MemorySwap: config.memory,
           NanoCpus: config.nanoCpus,
+          CpuShares: config.cpuShares,
           Privileged: true,
           Devices: [
             {
@@ -257,6 +262,26 @@ export class ContainerService implements OnModuleInit {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
+  }
+
+  async killScrcpy(containerId: string): Promise<void> {
+    const wsContainer = this.config.get<string>('WS_SCRCPY_CONTAINER') ?? 'emulfast-ws-scrcpy';
+
+    // Find the container's IP on the redroid network
+    const redroidNetwork = process.env['REDROID_NETWORK'] ?? 'emulfast-redroid';
+    const ip = await this.getContainerIpOnNetwork(containerId, redroidNetwork);
+    if (!ip) {
+      throw new HttpException('Container IP not found', HttpStatus.UNPROCESSABLE_ENTITY);
+    }
+
+    const adbSerial = `${ip}:5555`;
+    // Kill scrcpy-server process on the Android device (best-effort)
+    await this.execInWsScrcpy(wsContainer, [
+      'adb', '-s', adbSerial, 'shell',
+      "ps -A | grep scrcpy | awk '{print $2}' | xargs kill -9 2>/dev/null || true",
+    ]).catch(() => { /* best-effort */ });
+
+    this.logger.log(`killScrcpy: adbSerial=${adbSerial}`);
   }
 
   async deleteContainer(id: string): Promise<void> {

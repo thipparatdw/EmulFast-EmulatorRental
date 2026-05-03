@@ -227,7 +227,8 @@
       "title_highlight": "Fast, Simple, Anywhere",
       "desc": "Rent a high-performance Android Emulator — no installation, no configuration. Start in 30 seconds.",
       "cta_start": "Get started free",
-      "cta_packages": "View packages"
+      "cta_packages": "View packages",
+      "cta_my_emulators": "My Emulators"
     },
     "features": {
       "title": "Why EmulFast?",
